@@ -12,17 +12,61 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Sync repo to the VPS (keeps server copy up to date, removes deleted files)
+      # Setup SSH
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p ${{ secrets.SSH_PORT || '22' }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      # Sync files to VPS using rsync
       - name: Sync files to VPS
-        uses: easingthemes/ssh-deploy@v5.1.0
+        run: |
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            --exclude='.github' \
+            --exclude='*.log' \
+            -e "ssh -p ${{ secrets.SSH_PORT || '22' }} -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.REMOTE_PATH || '/opt/pact-website' }}/
+
+      # Write env file on VPS
+      - name: Write env file on VPS
+        uses: appleboy/ssh-action@v1.1.0
         with:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          REMOTE_HOST: ${{ secrets.SSH_HOST }}
-          REMOTE_USER: ${{ secrets.SSH_USER }}
-          REMOTE_PORT: ${{ secrets.SSH_PORT || '22' }}
-          SOURCE: "./"
-          TARGET: ${{ secrets.REMOTE_PATH || '/opt/pact-website' }}
-          ARGS: "-avz --delete --exclude='.git' --exclude='node_modules' --exclude='.env'"
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          script: |
+            APP_DIR="${APP_DIR:-${{ secrets.REMOTE_PATH || '/opt/pact-website' }}}"
+            cd "$APP_DIR"
+            
+            # Create .env file if it doesn't exist
+            if [ ! -f ".env" ]; then
+              echo "Creating .env file..."
+              
+              # Generate random session secret
+              SESSION_SECRET=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9')
+              
+              # Create .env file with required variables
+              cat > .env << EOF
+            # Database
+            DATABASE_URL=postgresql://neondb_owner:npg_aTqvez1r0bkA@ep-holy-sea-ahwpuzyd-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+            
+            # Session Secret (generate a secure random string)
+            SESSION_SECRET=${SESSION_SECRET}
+            
+            # Frontend API proxy URL
+            VITE_API_URL=http://138.68.104.122
+            EOF
+              
+              echo ".env file created successfully with generated SESSION_SECRET."
+            else
+              echo ".env file already exists, skipping creation."
+            fi
 
       # Build + restart services on the VPS
       - name: Deploy via Docker Compose
@@ -40,12 +84,6 @@ jobs:
 
             mkdir -p "$APP_DIR"
             cd "$APP_DIR"
-
-            # Ensure env stays on the server (not committed)
-            if [ ! -f ".env" ]; then
-              echo "Missing .env in $APP_DIR; create it before deploying." >&2
-              exit 1
-            fi
 
             # Build and restart
             docker compose -f "$COMPOSE_FILE" pull || true
