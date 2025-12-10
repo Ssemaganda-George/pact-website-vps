@@ -15,8 +15,11 @@ import {
   BarChart4,
   Menu,
   Building2,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import pactLogo from '@/assets/pact-logo.png';
 
 interface MenuItem {
   name: string;
@@ -30,6 +33,7 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
+  const { logout, user } = useAuth();
   const menuItems: MenuItem[] = [
     {
       name: 'Dashboard',
@@ -110,15 +114,15 @@ const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
       
       {/* Sidebar */}
       <div className={`
-        fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-transform duration-300 ease-in-out
+        fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-transform duration-300 ease-in-out flex flex-col
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         w-64 lg:w-64
       `}>
         <div className="p-4 border-b flex items-center justify-between">
           <Link href="/admin/dashboard">
             <div className="flex items-center font-semibold text-lg text-primary cursor-pointer">
-              <span className="text-xl font-bold text-primary mr-1">PACT</span>
-              <span className="text-gray-600">CMS</span>
+              <img src={pactLogo} alt="PACT Logo" className="w-16 h-14 mr-2 -mt-1" />
+              <span className="text-xl font-bold text-primary self-end mt-3">CMS</span>
             </div>
           </Link>
           <button
@@ -128,7 +132,7 @@ const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
             <X className="w-5 h-5" />
           </button>
         </div>
-        <nav className="p-4 overflow-y-auto h-[calc(100vh-80px)]">
+        <nav className="p-4 overflow-y-auto flex-1">
           <ul className="space-y-1">
             {menuItems.map((item) => {
               // We need to lift this hook outside the map function
@@ -164,6 +168,24 @@ const AdminSidebar = ({ isOpen, onToggle }: AdminSidebarProps) => {
             })}
           </ul>
         </nav>
+        
+        {/* Logout section - Fixed at bottom */}
+        <div className="p-4 border-t border-gray-200">
+          <div className="px-3 py-2 text-sm text-gray-600 mb-2">
+            User Name: <span className="font-medium">{user?.username || 'Admin'}</span>
+          </div>
+          <button
+            onClick={() => {
+              if (confirm('Are you sure you want to logout?')) {
+                logout();
+              }
+            }}
+            className="flex items-center w-full py-2 px-3 rounded-md text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+          >
+            <LogOut className="w-5 h-5 mr-2" />
+            <span>Logout</span>
+          </button>
+        </div>
       </div>
     </>
   );
