@@ -73,6 +73,7 @@ RUN chmod +x /wait-for-it.sh
 # Copy built files from the build stage
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/server ./server
+COPY --from=build /app/shared ./shared
 COPY --from=build /app/drizzle.config.ts ./drizzle.config.ts
 
 # Copy entry point script
