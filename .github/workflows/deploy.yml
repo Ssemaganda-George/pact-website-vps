@@ -91,8 +91,9 @@ jobs:
 
             # Build and restart
             echo "Building and starting containers..."
-            docker compose -f "$COMPOSE_FILE" pull || true
+            # Build the app image (--pull ensures base images are up to date)
             docker compose -f "$COMPOSE_FILE" build --pull
+            # Start all services (nginx and postgres will be pulled automatically if needed)
             docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
 
             # Light cleanup to help with disk space
