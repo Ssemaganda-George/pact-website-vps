@@ -20,7 +20,7 @@ FROM node:22-slim AS development
 WORKDIR /app
 
 # Install bash for wait-for-it script
-RUN apk add --no-cache bash
+RUN apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
@@ -58,7 +58,7 @@ FROM node:22-slim
 WORKDIR /app
 
 # Install bash for wait-for-it script
-RUN apk add --no-cache bash
+RUN apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
