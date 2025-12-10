@@ -60,11 +60,11 @@ WORKDIR /app
 # Install bash for wait-for-it script
 RUN apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/*
 
-# Copy package files
-COPY package*.json ./
+# Copy package files and lock file from build stage to ensure consistency
+COPY --from=build /app/package*.json ./
 
 # Install production dependencies only
-RUN npm ci --production
+RUN npm install --omit=dev
 
 # Download wait-for-it script to ensure PostgreSQL is ready before starting the app
 ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh /wait-for-it.sh
