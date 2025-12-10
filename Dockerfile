@@ -1,4 +1,4 @@
-FROM node:20-alpine as build
+FROM node:22-slim AS build
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ COPY . .
 RUN npm run build
 
 # Development stage
-FROM node:20-alpine as development
+FROM node:22-slim AS development
 
 WORKDIR /app
 
@@ -53,7 +53,7 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["npm", "run", "dev"]
 
 # Production stage
-FROM node:20-alpine
+FROM node:22-slim
 
 WORKDIR /app
 

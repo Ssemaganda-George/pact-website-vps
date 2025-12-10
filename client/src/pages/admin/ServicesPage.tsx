@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getQueryFn, apiRequest } from '@/lib/queryClient';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -75,6 +75,16 @@ export default function ServicesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<any | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Clean up image preview URL when component unmounts or preview changes
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   // Form setup
   const form = useForm<ServiceFormData>({
@@ -89,7 +99,11 @@ export default function ServicesPage() {
   });
 
   // Fetch services
-  const { data: servicesData, isLoading } = useQuery({
+  const { data: servicesData, isLoading } = useQuery<{
+    success: boolean;
+    data: any[];
+    message?: string;
+  }>({
     queryKey: ['/api/content/services'],
     queryFn: getQueryFn({ on401: 'returnNull' }),
   });
@@ -125,6 +139,7 @@ export default function ServicesPage() {
         description: 'The service has been created successfully.',
       });
       setDialogOpen(false);
+      setImagePreview(null);
       form.reset();
     },
     onError: () => {
@@ -171,6 +186,7 @@ export default function ServicesPage() {
       });
       setDialogOpen(false);
       setEditingService(null);
+      setImagePreview(null);
       form.reset();
     },
     onError: () => {
@@ -224,6 +240,7 @@ export default function ServicesPage() {
       image: service.image,
       order_index: service.order_index || 0
     });
+    setImagePreview(null);
     setDialogOpen(true);
   };
 
@@ -243,6 +260,7 @@ export default function ServicesPage() {
       image: '',
       order_index: 0
     });
+    setImagePreview(null);
     setDialogOpen(true);
   };
 
@@ -419,14 +437,25 @@ export default function ServicesPage() {
                     <FormLabel>Image*</FormLabel>
                     <FormControl>
                       <div>
-                        {field.value && typeof field.value === 'string' && (
-                          <img src={field.value} alt="Current" className="mb-2 w-full h-32 object-cover rounded" />
+                        {(imagePreview || (field.value && typeof field.value === 'string')) && (
+                          <img 
+                            src={imagePreview || field.value} 
+                            alt="Service" 
+                            className="mb-2 w-full h-32 object-cover rounded" 
+                          />
                         )}
                         <Input
                           type="file"
                           accept="image/*"
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
+                              // Clean up previous preview
+                              if (imagePreview) {
+                                URL.revokeObjectURL(imagePreview);
+                              }
+                              // Create new preview
+                              const previewUrl = URL.createObjectURL(e.target.files[0]);
+                              setImagePreview(previewUrl);
                               field.onChange(e.target.files[0]);
                             }
                           }}

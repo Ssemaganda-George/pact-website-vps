@@ -128,6 +128,15 @@ export default function ProjectsPage() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const { toast } = useToast();
   const [selectedProjects, setSelectedProjects] = useState<Set<number>>(new Set());
+
+  // Clean up image preview URL when component unmounts or preview changes
+  useEffect(() => {
+    return () => {
+      if (bgImagePreview && bgImagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(bgImagePreview);
+      }
+    };
+  }, [bgImagePreview]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const projectsPerPage = 10;

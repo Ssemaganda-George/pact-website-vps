@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as locationsApi from '@/api/locations';
 import { useToast } from '@/hooks/use-toast';
@@ -45,6 +45,15 @@ export default function LocationsPage() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Clean up image preview URL when component unmounts or preview changes
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
   
   // Fetch locations
   const { data: locationsData, isLoading } = useQuery({

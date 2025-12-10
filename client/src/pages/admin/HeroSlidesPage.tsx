@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useApi } from '@/hooks/useApi';
 import { LucideEdit, Trash2, Plus, ArrowUp, ArrowDown, Image, Video, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,6 +68,18 @@ const HeroSlidesPage = () => {
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [bgImageFile, setBgImageFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+
+  // Clean up image preview URL when component unmounts or preview changes
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+      if (videoPreview && videoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(videoPreview);
+      }
+    };
+  }, [imagePreview, videoPreview]);
 
   // Form state for new/edited slide
   const [formData, setFormData] = useState<Partial<HeroSlide>>({

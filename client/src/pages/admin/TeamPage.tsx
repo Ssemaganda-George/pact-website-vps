@@ -105,6 +105,17 @@ export default function TeamPage() {
     serviceIds: [] as number[]
   });
 
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Clean up image preview URL when component unmounts or preview changes
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
   // Get unique departments and locations, filtering out empty/null/undefined values
   const departments = [...new Set(teamMembers.map(member => member.department).filter(dept => dept && dept.trim() !== ''))];
   const locations = [...new Set(teamMembers.map(member => member.location).filter(loc => loc && loc.trim() !== ''))];
@@ -320,6 +331,7 @@ export default function TeamPage() {
           description: `Team member ${selectedMember ? 'updated' : 'created'} successfully.`,
         });
         setIsDialogOpen(false);
+        setImagePreview(null);
         fetchTeamMembers();
       } else {
         throw new Error(data.message || "Failed to save team member");
@@ -413,6 +425,7 @@ export default function TeamPage() {
               image: null,
               serviceIds: []
             });
+            setImagePreview(null);
             setIsDialogOpen(true);
           }}>
             <Plus className="w-4 h-4 mr-2" />
@@ -573,6 +586,7 @@ export default function TeamPage() {
                           image: null,
                           serviceIds: member.services?.map(service => service.id) || []
                         });
+                        setImagePreview(null);
                         setIsDialogOpen(true);
                       }}>
                         <Edit className="w-4 h-4 mr-2" />
@@ -898,18 +912,27 @@ export default function TeamPage() {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
+                    // Clean up previous preview URL
+                    if (imagePreview) {
+                      URL.revokeObjectURL(imagePreview);
+                    }
+                    // Create new preview URL
+                    const previewUrl = URL.createObjectURL(file);
+                    setImagePreview(previewUrl);
                     setFormData({ ...formData, image: file });
                   }
                 }}
               />
-              {selectedMember?.image && (
+              {(imagePreview || (selectedMember?.image)) && (
                 <div className="mt-2">
-                  <p className="text-sm text-gray-500 mb-2">Current image:</p>
+                  <p className="text-sm text-gray-500 mb-2">
+                    {imagePreview ? 'New image preview:' : 'Current image:'}
+                  </p>
                   <img
-                    src={selectedMember.image.includes('://') 
+                    src={imagePreview || (selectedMember?.image && selectedMember.image.includes('://') 
                       ? selectedMember.image 
-                      : `/uploads/team/${selectedMember.image}`}
-                    alt={selectedMember.name}
+                      : selectedMember?.image ? `/uploads/team/${selectedMember.image}` : '')}
+                    alt={selectedMember?.name || 'Preview'}
                     className="w-32 h-32 object-cover rounded-md"
                   />
                 </div>

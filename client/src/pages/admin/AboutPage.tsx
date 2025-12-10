@@ -49,6 +49,15 @@ const AboutPage = () => {
     mission: 'To empower communities socially and economically.'
   });
 
+  // Clean up image preview URL when component unmounts or preview changes
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
   // Fetch about content
   useEffect(() => {
     const fetchContent = async () => {
