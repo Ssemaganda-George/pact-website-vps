@@ -1,16 +1,16 @@
 services:
   - type: web
     name: pact-consultancy
-    runtime: docker
+    runtime: node
     plan: free
     region: oregon
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    buildCommand: npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 5000
+        value: 10000
       - key: DATABASE_URL
         sync: false
       - key: SESSION_SECRET
