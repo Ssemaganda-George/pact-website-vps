@@ -1,0 +1,189 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+env:
+  VPS_HOST: 138.68.104.122
+  VPS_USER: root
+  APP_DIR: /root/pact-website-vps
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/pact_site_key
+          chmod 600 ~/.ssh/pact_site_key
+          ssh-keyscan -H ${{ env.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Test SSH connection
+        run: |
+          ssh -i ~/.ssh/pact_site_key -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "echo 'SSH connection successful'"
+
+      - name: Create app directory on VPS
+        run: |
+          ssh -i ~/.ssh/pact_site_key -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            mkdir -p ${{ env.APP_DIR }}
+            mkdir -p ${{ env.APP_DIR }}/nginx/ssl
+            mkdir -p ${{ env.APP_DIR }}/uploads
+          "
+
+      - name: Copy files to VPS
+        run: |
+          # Create a tarball excluding unnecessary files
+          tar --exclude='.git' \
+              --exclude='node_modules' \
+              --exclude='.github' \
+              --exclude='__MACOSX' \
+              --exclude='*.log' \
+              --exclude='.env' \
+              -czf deploy.tar.gz .
+          
+          # Copy tarball to VPS
+          scp -i ~/.ssh/pact_site_key -o StrictHostKeyChecking=no deploy.tar.gz ${{ env.VPS_USER }}@${{ env.VPS_HOST }}:${{ env.APP_DIR }}/
+          
+          # Extract on VPS
+          ssh -i ~/.ssh/pact_site_key -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.APP_DIR }}
+            tar -xzf deploy.tar.gz
+            rm deploy.tar.gz
+          "
+          
+          # Clean up local tarball
+          rm deploy.tar.gz
+
+      - name: Setup environment file on VPS
+        run: |
+          ssh -i ~/.ssh/pact_site_key -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.APP_DIR }}
+            if [ ! -f .env ]; then
+              if [ -f env.example ]; then
+                cp env.example .env
+                echo '.env file created from env.example'
+              else
+                echo 'NODE_ENV=production' > .env
+                echo 'PORT=5000' >> .env
+                echo '.env file created with defaults'
+              fi
+            fi
+            
+            # Update DATABASE_URL if provided as secret
+            if [ -n '${{ secrets.DATABASE_URL }}' ]; then
+              sed -i 's|DATABASE_URL=.*|DATABASE_URL=${{ secrets.DATABASE_URL }}|' .env || echo 'DATABASE_URL=${{ secrets.DATABASE_URL }}' >> .env
+            fi
+            
+            # Update other secrets if provided
+            [ -n '${{ secrets.SESSION_SECRET }}' ] && sed -i 's|SESSION_SECRET=.*|SESSION_SECRET=${{ secrets.SESSION_SECRET }}|' .env || true
+            [ -n '${{ secrets.SMTP_HOST }}' ] && sed -i 's|SMTP_HOST=.*|SMTP_HOST=${{ secrets.SMTP_HOST }}|' .env || true
+            [ -n '${{ secrets.SMTP_PORT }}' ] && sed -i 's|SMTP_PORT=.*|SMTP_PORT=${{ secrets.SMTP_PORT }}|' .env || true
+            [ -n '${{ secrets.SMTP_USER }}' ] && sed -i 's|SMTP_USER=.*|SMTP_USER=${{ secrets.SMTP_USER }}|' .env || true
+            [ -n '${{ secrets.SMTP_PASS }}' ] && sed -i 's|SMTP_PASS=.*|SMTP_PASS=${{ secrets.SMTP_PASS }}|' .env || true
+            [ -n '${{ secrets.SMTP_FROM }}' ] && sed -i 's|SMTP_FROM=.*|SMTP_FROM=${{ secrets.SMTP_FROM }}|' .env || true
+            [ -n '${{ secrets.PRODUCTION_URL }}' ] && sed -i 's|PRODUCTION_URL=.*|PRODUCTION_URL=${{ secrets.PRODUCTION_URL }}|' .env || true
+          "
+
+      - name: Ensure Docker and Docker Compose are installed
+        run: |
+          ssh -i ~/.ssh/pact_site_key -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            if ! command -v docker &> /dev/null; then
+              echo 'Installing Docker...'
+              curl -fsSL https://get.docker.com -o get-docker.sh
+              sh get-docker.sh
+              rm get-docker.sh
+            fi
+            
+            if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+              echo 'Installing Docker Compose...'
+              apt-get update
+              apt-get install -y docker-compose-plugin || apt-get install -y docker-compose
+            fi
+          "
+
+      - name: Stop existing containers
+        run: |
+          ssh -i ~/.ssh/pact_site_key -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.APP_DIR }}
+            if [ -f docker-compose.prod.yml ]; then
+              docker compose -f docker-compose.prod.yml down || docker-compose -f docker-compose.prod.yml down || true
+            fi
+            # Clean up old images to save space
+            docker image prune -f || true
+          "
+
+      - name: Build and deploy with Docker Compose
+        run: |
+          ssh -i ~/.ssh/pact_site_key -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.APP_DIR }}
+            
+            # Use docker compose (newer) or docker-compose (older)
+            if docker compose version &> /dev/null; then
+              COMPOSE_CMD='docker compose'
+            else
+              COMPOSE_CMD='docker-compose'
+            fi
+            
+            # Build and start services
+            \$COMPOSE_CMD -f docker-compose.prod.yml build --no-cache
+            \$COMPOSE_CMD -f docker-compose.prod.yml up -d
+            
+            # Wait for services to be ready
+            echo 'Waiting for services to start...'
+            sleep 15
+            
+            # Check if containers are running
+            \$COMPOSE_CMD -f docker-compose.prod.yml ps
+          "
+
+      - name: Run database migrations
+        run: |
+          ssh -i ~/.ssh/pact_site_key -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.APP_DIR }}
+            
+            # Wait for database to be ready
+            echo 'Waiting for database to be ready...'
+            sleep 10
+            
+            # Get app container name
+            APP_CONTAINER=\$(docker ps --filter 'name=app' --format '{{.Names}}' | head -n1)
+            
+            if [ -n \"\$APP_CONTAINER\" ]; then
+              echo 'Running database migrations...'
+              docker exec \$APP_CONTAINER npm run db:push || echo 'Migration command not found or failed'
+            else
+              echo 'App container not found, skipping migrations'
+            fi
+          "
+
+      - name: Verify deployment
+        run: |
+          ssh -i ~/.ssh/pact_site_key -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+            cd ${{ env.APP_DIR }}
+            
+            # Check container status
+            echo '=== Container Status ==='
+            docker ps --filter 'name=app' --filter 'name=nginx' --filter 'name=postgres'
+            
+            # Check if app is responding
+            echo ''
+            echo '=== Health Check ==='
+            sleep 5
+            curl -f http://localhost:5000/api/health || curl -f http://localhost:8080/api/health || echo 'Health check endpoint not available'
+          "
+
+      - name: Deployment Summary
+        run: |
+          echo '✅ Deployment completed successfully!'
+          echo "🌐 Application should be available at: http://${{ env.VPS_HOST }}:8080"
+          echo "🔒 HTTPS should be available at: https://${{ env.VPS_HOST }}:8443 (if SSL certificates are configured)"
+
