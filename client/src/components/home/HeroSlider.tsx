@@ -259,20 +259,20 @@ const HeroSlider = () => {
       </div>
 
       {/* Navigation Buttons - BearingPoint style (rectangular) */}
-      <div className="absolute bottom-8 right-8 z-20 flex space-x-3">
+      <div className="absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 md:left-auto md:right-8 md:translate-x-0 z-20 flex space-x-3">
         <button 
           onClick={scrollPrev} 
-          className="bg-white/10 hover:bg-white/20 text-white p-2.5 transition-all duration-300 hover:scale-110"
+          className="bg-white/10 hover:bg-white/20 text-white p-2.5 md:p-2.5 transition-all duration-300 hover:scale-110 backdrop-blur-sm"
           aria-label="Previous slide"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-5 h-5 md:w-5 md:h-5" />
         </button>
         <button 
           onClick={scrollNext} 
-          className="bg-white/10 hover:bg-white/20 text-white p-2.5 transition-all duration-300 hover:scale-110"
+          className="bg-white/10 hover:bg-white/20 text-white p-2.5 md:p-2.5 transition-all duration-300 hover:scale-110 backdrop-blur-sm"
           aria-label="Next slide"
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-5 h-5 md:w-5 md:h-5" />
         </button>
       </div>
 
@@ -294,7 +294,7 @@ const HeroSlider = () => {
       </div>
 
       {/* Scroll Down Indicator - BearingPoint style */}
-      <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center animate-bounce md:hidden">
+      <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center animate-bounce md:hidden">
         <ArrowDown className="w-6 h-6 text-white/80" />
       </div>
     </section>
