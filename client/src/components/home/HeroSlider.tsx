@@ -262,19 +262,19 @@ const HeroSlider = () => {
       {/* Previous Button - Left Side */}
       <button 
         onClick={scrollPrev} 
-        className="absolute bottom-4 left-4 md:bottom-8 md:left-auto md:right-20 z-20 bg-white/10 hover:bg-white/20 text-white p-2.5 md:p-2.5 transition-all duration-300 hover:scale-110 backdrop-blur-sm"
+        className="absolute bottom-4 left-4 md:bottom-8 md:left-auto md:right-20 z-20 bg-white/10 hover:bg-white/20 text-white p-2 md:p-2.5 transition-all duration-300 hover:scale-110 backdrop-blur-sm"
         aria-label="Previous slide"
       >
-        <ChevronLeft className="w-5 h-5 md:w-5 md:h-5" />
+        <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
       </button>
       
       {/* Next Button - Right Side */}
       <button 
         onClick={scrollNext} 
-        className="absolute bottom-4 right-4 md:bottom-8 md:right-8 z-20 bg-white/10 hover:bg-white/20 text-white p-2.5 md:p-2.5 transition-all duration-300 hover:scale-110 backdrop-blur-sm"
+        className="absolute bottom-4 right-4 md:bottom-8 md:right-8 z-20 bg-white/10 hover:bg-white/20 text-white p-2 md:p-2.5 transition-all duration-300 hover:scale-110 backdrop-blur-sm"
         aria-label="Next slide"
       >
-        <ChevronRight className="w-5 h-5 md:w-5 md:h-5" />
+        <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
       </button>
 
       {/* Slide Indicators - BearingPoint horizontal lines style */}
