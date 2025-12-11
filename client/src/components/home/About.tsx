@@ -234,64 +234,64 @@ const About = () => {
           {/* Left Column - Description */}
           <div className="lg:col-span-7 flex flex-col h-full">
             {/* Card wrapper for left content */}
-            <div className="bg-white p-8 rounded-lg shadow-md h-full flex flex-col">
+            <div className="bg-white p-6 sm:p-8 rounded-lg shadow-md h-full flex flex-col transition-all duration-500 hover:shadow-xl">
               {/* Description Text - Show only first paragraph */}
-              <div className="mb-6">
-                <h3 className="text-2xl font-bold text-navy-900 mb-4">
+              <div className="mb-4 sm:mb-6">
+                <h3 className="text-xl sm:text-2xl font-bold text-navy-900 mb-3 sm:mb-4">
                   Who We Are
                 </h3>
-                <p className="text-gray-700 leading-relaxed text-base">
+                <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
                   {previewText}
                 </p>
               </div>
 
               {/* Features - Show only 2 features */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 flex-grow">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6 flex-grow">
                 {content.features && content.features.slice(0, 2).map((feature, index) => (
                   <div 
                     key={index}
-                    className="flex items-start p-4 bg-slate-50 rounded-lg border border-slate-200 hover:border-primary/30 transition-all duration-300"
+                    className="flex items-start p-3 sm:p-4 bg-slate-50 rounded-lg border border-slate-200 hover:border-primary/30 transition-all duration-500 hover:shadow-md hover:-translate-y-1"
                     data-aos="fade-up" 
                     data-aos-delay={100 + (index * 100)}
                   >
-                    <div className="p-2 rounded-full bg-primary/10 text-primary mr-3 mt-1 flex-shrink-0">
-                      {featureIcons[feature.icon as keyof typeof featureIcons] || <CheckCircle className="h-4 w-4" />}
+                    <div className="p-1.5 sm:p-2 rounded-full bg-primary/10 text-primary mr-2 sm:mr-3 mt-1 flex-shrink-0 transition-transform duration-500 hover:scale-110 hover:rotate-6">
+                      {featureIcons[feature.icon as keyof typeof featureIcons] || <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />}
                     </div>
                     <div>
-                      <h4 className="font-semibold text-navy-800 mb-1">{feature.title}</h4>
-                      <p className="text-sm text-gray-600">{feature.description}</p>
+                      <h4 className="font-semibold text-navy-800 mb-1 text-sm sm:text-base">{feature.title}</h4>
+                      <p className="text-xs sm:text-sm text-gray-600">{feature.description}</p>
                     </div>
                   </div>
                 ))}
               </div>
             
               {/* More Details Button with Dialog */}
-              <div className="mt-auto pt-4 border-t border-slate-200">
+              <div className="mt-auto pt-3 sm:pt-4 border-t border-slate-200">
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <button className="w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg group">
+                    <button className="w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-500 shadow-md hover:shadow-lg group hover:scale-[1.02]">
                       More Details
-                      <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight className="h-5 w-5 group-hover:translate-x-2 transition-transform duration-500" />
                     </button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col [&>button]:z-50 [&>button]:w-10 [&>button]:h-10 [&>button]:bg-gray-100 [&>button]:hover:bg-gray-200 [&>button]:rounded-md [&>button]:right-6 [&>button]:flex [&>button]:items-center [&>button]:justify-center [&>button>svg]:w-6 [&>button>svg]:h-6 [&>button>svg]:stroke-[3]">
+                  <DialogContent className="max-w-4xl w-[95vw] sm:w-[90vw] md:w-full max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col duration-600 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-100 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] [&>button]:z-50 [&>button]:w-8 [&>button]:h-8 sm:[&>button]:w-10 sm:[&>button]:h-10 [&>button]:bg-gray-100 [&>button]:hover:bg-gray-200 [&>button]:hover:scale-110 [&>button]:rounded-md [&>button]:right-4 sm:[&>button]:right-6 [&>button]:top-4 sm:[&>button]:top-4 [&>button]:flex [&>button]:items-center [&>button]:justify-center [&>button>svg]:w-5 [&>button>svg]:h-5 sm:[&>button>svg]:w-6 sm:[&>button>svg]:h-6 [&>button>svg]:stroke-[3] [&>button]:transition-all [&>button]:duration-500">
                     {/* Fixed Header */}
-                    <DialogHeader className="pb-4 border-b sticky top-0 bg-white z-40">
-                      <DialogTitle className="text-3xl font-bold text-navy-900 mb-2 pr-12">
+                    <DialogHeader className="pb-3 sm:pb-4 border-b sticky top-0 bg-white z-40 transition-all duration-500">
+                      <DialogTitle className="text-xl sm:text-2xl md:text-3xl font-bold text-navy-900 mb-2 pr-10 sm:pr-12">
                         About <span className="text-primary">PACT</span> Consultancy
                       </DialogTitle>
-                      <DialogDescription className="text-base">
+                      <DialogDescription className="text-sm sm:text-base">
                         {content.subtitle}
                       </DialogDescription>
                     </DialogHeader>
                   
-                    {/* Scrollable Content */}
-                    <div className="overflow-y-auto flex-1 pr-2">
-                      <div className="space-y-6">
+                    {/* Scrollable Content with smooth scrolling */}
+                    <div className="overflow-y-auto flex-1 pr-1 sm:pr-2 scroll-smooth">
+                      <div className="space-y-4 sm:space-y-6 py-2">
                         {/* Full Description */}
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                           {paragraphs.map((paragraph, index) => (
-                            <p key={index} className="text-gray-700 leading-relaxed text-base">
+                            <p key={index} className="text-gray-700 leading-relaxed text-sm sm:text-base opacity-0 animate-fade-in" style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'forwards' }}>
                               {paragraph}
                             </p>
                           ))}
@@ -299,20 +299,21 @@ const About = () => {
 
                         {/* All Features */}
                         {content.features && content.features.length > 0 && (
-                          <div className="mt-8">
-                            <h3 className="text-xl font-semibold text-navy-800 mb-4">Our Strengths</h3>
-                            <div className="grid md:grid-cols-2 gap-4">
+                          <div className="mt-6 sm:mt-8">
+                            <h3 className="text-lg sm:text-xl font-semibold text-navy-800 mb-3 sm:mb-4">Our Strengths</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                               {content.features.map((feature, index) => (
                                 <div 
                                   key={index}
-                                  className="flex items-start p-4 bg-slate-50 rounded-lg border border-slate-200"
+                                  className="flex items-start p-3 sm:p-4 bg-slate-50 rounded-lg border border-slate-200 hover:border-primary/30 transition-all duration-500 hover:shadow-md opacity-0 animate-fade-up"
+                                  style={{ animationDelay: `${(paragraphs.length * 100) + (index * 80)}ms`, animationFillMode: 'forwards' }}
                                 >
-                                  <div className="p-2 rounded-full bg-primary/10 text-primary mr-3 mt-1 flex-shrink-0">
-                                    {featureIcons[feature.icon as keyof typeof featureIcons] || <CheckCircle className="h-4 w-4" />}
+                                  <div className="p-1.5 sm:p-2 rounded-full bg-primary/10 text-primary mr-2 sm:mr-3 mt-1 flex-shrink-0 transition-transform duration-500 hover:scale-110">
+                                    {featureIcons[feature.icon as keyof typeof featureIcons] || <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />}
                                   </div>
                                   <div>
-                                    <h4 className="font-semibold text-navy-800 mb-1">{feature.title}</h4>
-                                    <p className="text-sm text-gray-600">{feature.description}</p>
+                                    <h4 className="font-semibold text-navy-800 mb-1 text-sm sm:text-base">{feature.title}</h4>
+                                    <p className="text-xs sm:text-sm text-gray-600">{feature.description}</p>
                                   </div>
                                 </div>
                               ))}
@@ -340,49 +341,49 @@ const About = () => {
 
           {/* Right Column - Vision, Mission, Values */}
           <div className="lg:col-span-5">
-            <div className="bg-white p-8 rounded-lg shadow-md w-full h-full flex flex-col justify-between">
+            <div className="bg-white p-6 sm:p-8 rounded-lg shadow-md w-full h-full flex flex-col justify-between transition-all duration-500 hover:shadow-xl">
               {/* Vision */}
-              <div className="mb-8">
-                <div className="flex items-center mb-4">
-                  <Target className="h-6 w-6 text-primary mr-3" />
-                  <h4 className="text-xl font-semibold text-navy-800 pb-1 border-b-2 border-primary">
+              <div className="mb-6 sm:mb-8">
+                <div className="flex items-center mb-3 sm:mb-4">
+                  <Target className="h-5 w-5 sm:h-6 sm:w-6 text-primary mr-2 sm:mr-3 transition-transform duration-500 hover:scale-110 hover:rotate-12" />
+                  <h4 className="text-lg sm:text-xl font-semibold text-navy-800 pb-1 border-b-2 border-primary">
                     Vision / Core Purpose
                   </h4>
                 </div>
-                <p className="italic text-gray-700 pl-9 border-l-2 border-primary/30 py-2">
+                <p className="italic text-gray-700 pl-6 sm:pl-9 border-l-2 border-primary/30 py-2 text-sm sm:text-base transition-colors duration-500 hover:border-primary">
                   {content.vision || defaultVision}
                 </p>
               </div>
 
               {/* Mission */}
-              <div className="mb-8">
-                <div className="flex items-center mb-4">
-                  <Globe className="h-6 w-6 text-primary mr-3" />
-                  <h4 className="text-xl font-semibold text-navy-800 pb-1 border-b-2 border-primary">
+              <div className="mb-6 sm:mb-8">
+                <div className="flex items-center mb-3 sm:mb-4">
+                  <Globe className="h-5 w-5 sm:h-6 sm:w-6 text-primary mr-2 sm:mr-3 transition-transform duration-500 hover:scale-110 hover:rotate-12" />
+                  <h4 className="text-lg sm:text-xl font-semibold text-navy-800 pb-1 border-b-2 border-primary">
                     Mission
                   </h4>
                 </div>
-                <p className="italic text-gray-700 pl-9 border-l-2 border-primary/30 py-2">
+                <p className="italic text-gray-700 pl-6 sm:pl-9 border-l-2 border-primary/30 py-2 text-sm sm:text-base transition-colors duration-500 hover:border-primary">
                   {content.mission || defaultMission}
                 </p>
               </div>
 
               {/* Core Values */}
                 <div>
-                <div className="flex items-center mb-4">
-                  <Award className="h-6 w-6 text-primary mr-3" />
-                  <h4 className="text-xl font-semibold text-navy-800 pb-1 border-b-2 border-primary">
+                <div className="flex items-center mb-3 sm:mb-4">
+                  <Award className="h-5 w-5 sm:h-6 sm:w-6 text-primary mr-2 sm:mr-3 transition-transform duration-500 hover:scale-110 hover:rotate-12" />
+                  <h4 className="text-lg sm:text-xl font-semibold text-navy-800 pb-1 border-b-2 border-primary">
                     Core Values
                   </h4>
                 </div>
-                <div className="space-y-2 pl-3">
+                <div className="space-y-2 pl-2 sm:pl-3">
                   {(content.core_values || defaultCoreValues).map((value, index) => (
                     <div 
                       key={index}
-                      className="flex items-center p-2 bg-slate-50 border-l-4 border-primary rounded-r text-gray-700 hover:bg-slate-100 transition-colors"
+                      className="flex items-center p-2 sm:p-2.5 bg-slate-50 border-l-4 border-primary rounded-r text-gray-700 hover:bg-primary/5 hover:border-primary/80 transition-all duration-500 hover:translate-x-2 hover:shadow-sm"
                     >
-                      <ArrowRight className="h-4 w-4 text-primary mr-3 flex-shrink-0" />
-                      <span>{value}</span>
+                      <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-primary mr-2 sm:mr-3 flex-shrink-0 transition-transform duration-500 group-hover:translate-x-1" />
+                      <span className="text-sm sm:text-base">{value}</span>
               </div>
                   ))}
                 </div>

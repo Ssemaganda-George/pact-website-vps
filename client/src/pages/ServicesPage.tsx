@@ -7,6 +7,7 @@ import CTA from '@/components/home/CTA';
 import { fetchServices } from '@/lib/api';
 import { ServiceItem } from '@/types';
 import { Loader2 } from 'lucide-react';
+import { scrollToHash } from '@/lib/smoothScroll';
 
 const ServiceDetailCard = ({ service }: { service: ServiceItem }) => {
   const [imageError, setImageError] = useState(false);
@@ -94,21 +95,17 @@ const ServicesPage = () => {
     const handleHashChange = () => {
       const hash = window.location.hash;
       if (hash) {
-        const id = hash.substring(1);
-        const element = document.getElementById(id);
-        if (element) {
-          // Add a slight delay to ensure the element is rendered
-          setTimeout(() => {
-            element.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
-        }
+        // Add a slight delay to ensure the element is rendered
+        setTimeout(() => {
+          scrollToHash(hash, { duration: 800, offset: 80 }).catch(console.error);
+        }, 150);
       }
     };
 
     // Call handleHashChange initially
     handleHashChange();
 
-    // Listen for hash changes (though wouter might handle this differently)
+    // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange);
 
     return () => {

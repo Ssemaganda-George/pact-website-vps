@@ -19,8 +19,12 @@ interface SlideContent {
 }
 
 const HeroSlider = () => {
-  // Initialize Embla Carousel
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, duration: 30 });
+  // Initialize Embla Carousel with smoother transitions
+  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+    loop: true, 
+    duration: 35, // Slower, more professional transition
+    skipSnaps: false,
+  });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
   const [slideProgress, setSlideProgress] = useState(0);
@@ -101,14 +105,14 @@ const HeroSlider = () => {
     emblaApi.on("scroll", onScroll);
     onSelect();
 
-    // Autoscroll functionality
+    // Autoscroll functionality with longer duration for professional feel
     const autoScrollInterval = setInterval(() => {
       if (emblaApi.canScrollNext()) {
         emblaApi.scrollNext();
       } else {
         emblaApi.scrollTo(0);
       }
-    }, 8000); // Slightly longer time for BearingPoint style
+    }, 9000); // Slower auto-advance for better UX
 
     return () => {
       emblaApi.off("select", onSelect);
@@ -155,7 +159,7 @@ const HeroSlider = () => {
       {/* BearingPoint style progress bar */}
       <div className="absolute top-0 left-0 right-0 z-30 h-1 bg-white/20">
         <div 
-          className="h-full bg-accent transition-all duration-1000 ease-linear"
+          className="h-full bg-accent transition-all duration-[9000ms] ease-linear"
           style={{ 
             width: `${slideProgress}%`, 
             backgroundColor: currentSlide?.accentColor || '#FF8200'
@@ -195,7 +199,7 @@ const HeroSlider = () => {
                     <div className="flex flex-col sm:flex-row gap-5 w-full">
                       <Link 
                         href={slide.actionLink} 
-                        className="flex items-center justify-center w-full sm:w-auto text-white py-3 px-6 rounded-sm transition-all text-center uppercase tracking-wide text-sm md:text-base font-medium"
+                        className="flex items-center justify-center w-full sm:w-auto text-white py-3 px-6 rounded-sm transition-all duration-300 text-center uppercase tracking-wide text-sm md:text-base font-medium hover:scale-105 hover:shadow-lg"
                         style={{ backgroundColor: slide.accentColor || '#FF8200' }}
                       >
                         <span>{slide.actionText}</span>
@@ -203,7 +207,7 @@ const HeroSlider = () => {
                       </Link>
                       <Link 
                         href="/contact" 
-                        className="flex items-center justify-center w-full sm:w-auto text-white py-3 px-6 rounded-sm transition-all text-center uppercase tracking-wide text-sm md:text-base font-medium border-2 border-white/60 hover:bg-white/10"
+                        className="flex items-center justify-center w-full sm:w-auto text-white py-3 px-6 rounded-sm transition-all duration-300 text-center uppercase tracking-wide text-sm md:text-base font-medium border-2 border-white/60 hover:bg-white/10 hover:scale-105"
                       >
                         <span>Contact Us</span>
                         <ArrowRight className="ml-2 w-5 h-5" />
@@ -258,14 +262,14 @@ const HeroSlider = () => {
       <div className="absolute bottom-8 right-8 z-20 flex space-x-3">
         <button 
           onClick={scrollPrev} 
-          className="bg-white/10 hover:bg-white/20 text-white p-2.5 transition-all"
+          className="bg-white/10 hover:bg-white/20 text-white p-2.5 transition-all duration-300 hover:scale-110"
           aria-label="Previous slide"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         <button 
           onClick={scrollNext} 
-          className="bg-white/10 hover:bg-white/20 text-white p-2.5 transition-all"
+          className="bg-white/10 hover:bg-white/20 text-white p-2.5 transition-all duration-300 hover:scale-110"
           aria-label="Next slide"
         >
           <ChevronRight className="w-5 h-5" />
@@ -277,7 +281,7 @@ const HeroSlider = () => {
         {scrollSnaps.map((_, index) => (
           <button
             key={index}
-            className="h-1 transition-all flex-grow"
+            className="h-1 transition-all duration-300 flex-grow"
             style={{
               backgroundColor: index === selectedIndex 
                 ? (currentSlide?.accentColor || '#FF8200') 

@@ -10,6 +10,7 @@ import Footer from "@/components/layout/Footer";
 import { ProjectsProvider } from "@/context/ProjectsContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AuthProvider } from "@/context/AuthContext";
+import { smoothScrollToTop } from "@/lib/smoothScroll";
 
 // Public Pages
 import HomePage from "@/pages/HomePage";
@@ -47,22 +48,16 @@ import AdminLocationsPage from '@/pages/admin/LocationsPage';
 function PublicRouter() {
   const [location] = useLocation();
   
-  // Scroll to top on route change, but only after a small delay
+  // Smooth scroll to top on route change with professional animation
   useEffect(() => {
-    const timer = setTimeout(() => {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    }, 100);
-    
-    return () => clearTimeout(timer);
+    // Use custom smooth scroll for better UX
+    smoothScrollToTop({ duration: 600 });
   }, [location]);
   
   return (
     <div className="font-sans text-secondary bg-light">
       <Header />
-      <main>
+      <main className="page-transition">
         <Switch>
           <Route path="/" component={HomePage} />
           <Route path="/about" component={AboutPage} />

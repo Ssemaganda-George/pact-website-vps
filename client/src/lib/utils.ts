@@ -21,10 +21,22 @@ export function validateEmail(email: string): boolean {
 export function smoothScrollTo(elementId: string) {
   const element = document.getElementById(elementId);
   if (element) {
-    element.scrollIntoView({
+    const offset = 80; // Account for fixed header
+    const elementPosition = element.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+    window.scrollTo({
+      top: offsetPosition,
       behavior: 'smooth'
     });
   }
+}
+
+export function smoothScrollToTop() {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
 }
 
 /**
