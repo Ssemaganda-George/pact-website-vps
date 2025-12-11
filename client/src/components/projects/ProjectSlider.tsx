@@ -41,7 +41,8 @@ export default function ProjectSlider({ projects, className }: ProjectSliderProp
               <div 
                 className="absolute inset-0 bg-cover bg-center transform transition-transform duration-500 group-hover:scale-105" 
                 style={{
-                  backgroundImage: featuredProject.bg_image || featuredProject.bgImage ? `url(${featuredProject.bg_image || featuredProject.bgImage})` : 'none',
+                  backgroundImage: featuredProject.bg_image || featuredProject.bgImage ? 
+                    `url(${featuredProject.bg_image || featuredProject.bgImage})` : 'none',
                   backgroundColor: featuredProject.bg_image || featuredProject.bgImage ? 'transparent' : '#f0f0f0'
                 }}
               >
@@ -78,7 +79,8 @@ export default function ProjectSlider({ projects, className }: ProjectSliderProp
                 <div 
                   className="absolute inset-0 bg-cover bg-center transform transition-transform duration-500 group-hover:scale-105" 
                   style={{
-                    backgroundImage: project.bg_image || project.bgImage ? `url(${project.bg_image || project.bgImage})` : 'none',
+                    backgroundImage: project.bg_image || project.bgImage ? 
+                      `url(${project.bg_image || project.bgImage})` : 'none',
                     backgroundColor: project.bg_image || project.bgImage ? 'transparent' : '#f0f0f0'
                   }}
                 >

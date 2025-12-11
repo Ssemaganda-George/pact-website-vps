@@ -38,8 +38,21 @@ const HeroSlider = () => {
         const data = await response.json();
         
         if (data.success && data.data && data.data.length > 0) {
+          // Map API response fields (snake_case) to component interface (camelCase)
+          const mappedSlides = data.data.map((slide: any) => ({
+            id: slide.id,
+            title: slide.title,
+            subtitle: slide.subtitle,
+            description: slide.description,
+            actionText: slide.action_text,
+            actionLink: slide.action_link,
+            backgroundImage: slide.background_image,
+            category: slide.category,
+            order_index: slide.order_index
+          }));
+          
           // Sort slides by order_index
-          const sortedSlides = [...data.data].sort((a, b) => 
+          const sortedSlides = [...mappedSlides].sort((a, b) => 
             (a.order_index || 0) - (b.order_index || 0)
           );
           setSlides(sortedSlides);
@@ -169,7 +182,7 @@ const HeroSlider = () => {
                   <div className="flex flex-col sm:flex-row gap-5">
                     <Link 
                       href={slide.actionLink} 
-                      className="group flex items-center text-white py-3 px-6 rounded-sm inline-block transition-all text-center uppercase tracking-wide text-sm md:text-base font-medium"
+                      className="group items-center text-white py-3 px-6 rounded-sm inline-block transition-all text-center uppercase tracking-wide text-sm md:text-base font-medium"
                       style={{ backgroundColor: slide.accentColor || '#FF8200' }}
                     >
                       {slide.actionText}
@@ -177,7 +190,7 @@ const HeroSlider = () => {
                     </Link>
                     <Link 
                       href="/contact" 
-                      className="group flex items-center text-white py-3 px-6 rounded-sm inline-block transition-all text-center uppercase tracking-wide text-sm md:text-base font-medium border-2 border-white/60 hover:bg-white/10"
+                      className="group items-center text-white py-3 px-6 rounded-sm inline-block transition-all text-center uppercase tracking-wide text-sm md:text-base font-medium border-2 border-white/60 hover:bg-white/10"
                     >
                       Contact Us
                       <ArrowRight className="ml-2 w-5 h-5 transform group-hover:translate-x-1 transition-transform" />

@@ -24,6 +24,7 @@ import { ParamsDictionary } from 'express-serve-static-core';
 import { Query } from 'express-serve-static-core';
 import { z } from 'zod';
 import fs from 'fs';
+import { uploadFileToSupabase, BUCKETS, ensureBucketsExist } from './supabase-storage';
 import { sendEmail, formatContactEmail } from './services/email';
 
 // Add type declarations for jsonwebtoken and multer
@@ -77,22 +78,20 @@ const jwtAuthenticate: RequestHandler = (req, res, next) => {
 
 // Set up multer for image uploads
 const serviceUpload = multer({
-  dest: join(__dirname, '../uploads/services'),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(null, false);
+    }
+  }
 });
 
 // Set up multer for blog article images
 const blogUpload = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, join(__dirname, '../uploads/blog'));
-    },
-    filename: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const ext = path.extname(file.originalname);
-      cb(null, uniqueSuffix + ext);
-    }
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
     // Accept only image files
@@ -106,16 +105,7 @@ const blogUpload = multer({
 
 // Set up multer for team member images
 const teamMemberUpload = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, join(__dirname, '../uploads/team'));
-    },
-    filename: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const ext = path.extname(file.originalname);
-      cb(null, uniqueSuffix + ext);
-    }
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
@@ -128,16 +118,7 @@ const teamMemberUpload = multer({
 
 // Set up multer for hero slide image uploads
 const heroSlideUpload = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, join(__dirname, '../uploads/hero'));
-    },
-    filename: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const ext = path.extname(file.originalname);
-      cb(null, uniqueSuffix + ext);
-    }
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
     // Accept only image files
@@ -151,65 +132,37 @@ const heroSlideUpload = multer({
 
 // Set up multer for about content image uploads
 const aboutUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const dir = path.join(__dirname, '..', 'client', 'public', 'uploads', 'about');
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-      // Generate a unique filename with original extension
-      const fileExt = path.extname(file.originalname);
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}${fileExt}`;
-      cb(null, fileName);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(null, false);
+    }
+  }
 });
 
 // Set up multer for project image uploads
 const projectUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const dir = path.join(__dirname, '..', 'client', 'public', 'uploads', 'projects');
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-      // Generate a unique filename with original extension
-      const fileExt = path.extname(file.originalname);
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}${fileExt}`;
-      cb(null, fileName);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(null, false);
+    }
+  }
 });
 
 // Set up multer for client logo uploads
 const clientUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const dir = path.join(__dirname, '../uploads/clients');
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-      // Generate a unique filename with original extension
-      const fileExt = path.extname(file.originalname);
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}${fileExt}`;
-      cb(null, fileName);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
@@ -225,20 +178,7 @@ const clientUpload = multer({
 
 // Set up multer for location image uploads
 const locationUpload = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      const dir = path.join(__dirname, '../uploads/locations');
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      cb(null, dir);
-    },
-    filename: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const ext = path.extname(file.originalname);
-      cb(null, uniqueSuffix + ext);
-    }
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
@@ -318,11 +258,19 @@ const createTeamMember: AsyncMulterHandler = async (req, res, next) => {
       serviceIds = [];
     }
 
+    let image = req.body.image;
+    if (req.file) {
+      const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.TEAM);
+      if (uploadResult) {
+        image = uploadResult.url;
+      }
+    }
+
     const data = {
       ...req.body,
       expertise: expertise,
       serviceIds: serviceIds,
-      image: req.file?.filename,
+      image,
       slug: slugify(req.body.name, { lower: true, strict: true })
     };
 
@@ -372,11 +320,19 @@ const updateTeamMember: AsyncMulterHandler = async (req, res, next) => {
       }
     }
 
+    let image = req.body.image;
+    if (req.file) {
+      const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.TEAM);
+      if (uploadResult) {
+        image = uploadResult.url;
+      }
+    }
+
     const data = {
       ...req.body,
       expertise: expertise,
       serviceIds: serviceIds,
-      image: req.file?.filename,
+      image,
       slug: req.body.name ? slugify(req.body.name, { lower: true, strict: true }) : undefined
     };
 
@@ -469,9 +425,17 @@ const createClient: AsyncMulterHandler = async (req, res, next) => {
   try {
     console.log("Create client request body:", req.body);
 
+    let logo = req.body.logo;
+    if (req.file) {
+      const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.CLIENTS);
+      if (uploadResult) {
+        logo = uploadResult.url;
+      }
+    }
+
     const data = {
       ...req.body,
-      logo: req.file ? `/uploads/clients/${req.file.filename}` : req.body.logo,
+      logo,
       order_index: req.body.order_index ? parseInt(req.body.order_index) : 0
     };
 
@@ -499,7 +463,12 @@ const updateClient: AsyncMulterHandler = async (req, res, next) => {
       logoValue = null;
     } else if (req.file) {
       // New file uploaded
-      logoValue = `/uploads/clients/${req.file.filename}`;
+      const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.CLIENTS);
+      if (uploadResult) {
+        logoValue = uploadResult.url;
+      } else {
+        logoValue = req.body.logo;
+      }
     } else {
       // Keep existing logo
       logoValue = req.body.logo;
@@ -586,11 +555,7 @@ const getServiceContent: AsyncHandler = async (req, res, next) => {
             : detail
         )
         : [],
-      image: service.image && service.image.startsWith('http')
-        ? service.image
-        : service.image
-          ? `/uploads/services/${service.image.split('/').pop()}`
-          : '/placeholder.jpg'
+      image: service.image || '/placeholder.jpg'
     }));
 
     res.json({
@@ -687,11 +652,17 @@ const createHeroSlide: AsyncMulterHandler = async (req, res, next) => {
     // Process file uploads if they exist
     if (req.files && typeof req.files === 'object') {
       if ('backgroundImage' in req.files && req.files['backgroundImage'].length > 0) {
-        processedBody.backgroundImage = `/uploads/hero/${req.files['backgroundImage'][0].filename}`;
+        const uploadResult = await uploadFileToSupabase(req.files['backgroundImage'][0], BUCKETS.HERO);
+        if (uploadResult) {
+          processedBody.backgroundImage = uploadResult.url;
+        }
       }
 
       if ('videoBackground' in req.files && req.files['videoBackground'].length > 0) {
-        processedBody.videoBackground = `/uploads/hero/${req.files['videoBackground'][0].filename}`;
+        const uploadResult = await uploadFileToSupabase(req.files['videoBackground'][0], BUCKETS.HERO);
+        if (uploadResult) {
+          processedBody.videoBackground = uploadResult.url;
+        }
       }
     }
 
@@ -714,20 +685,36 @@ const updateHeroSlide: AsyncMulterHandler = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
 
-    // Process data and convert order_index to number if it exists
-    const data = {
-      ...req.body,
-      order_index: req.body.order_index ? parseInt(req.body.order_index) : undefined
-    };
+    // Process data - only include fields that are provided and not empty
+    const data: any = {};
+
+    // Handle text fields - allow empty strings for optional fields
+    if (req.body.title !== undefined) data.title = req.body.title;
+    if (req.body.subtitle !== undefined) data.subtitle = req.body.subtitle;
+    if (req.body.description !== undefined) data.description = req.body.description;
+    if (req.body.actionText !== undefined) data.action_text = req.body.actionText;
+    if (req.body.actionLink !== undefined) data.action_link = req.body.actionLink;
+    if (req.body.backgroundImage !== undefined) data.background_image = req.body.backgroundImage;
+    if (req.body.category !== undefined) data.category = req.body.category;
+    if (req.body.videoBackground !== undefined) data.video_background = req.body.videoBackground;
+    if (req.body.accentColor !== undefined) data.accent_color = req.body.accentColor;
+    if (req.body.order_index !== undefined && req.body.order_index !== '') data.order_index = parseInt(req.body.order_index);
+    if (req.body.updated_by !== undefined && req.body.updated_by !== '') data.updated_by = parseInt(req.body.updated_by);
 
     // Process file uploads if they exist
     if (req.files && typeof req.files === 'object') {
       if ('backgroundImage' in req.files && req.files['backgroundImage'].length > 0) {
-        data.backgroundImage = `/uploads/hero/${req.files['backgroundImage'][0].filename}`;
+        const uploadResult = await uploadFileToSupabase(req.files['backgroundImage'][0], BUCKETS.HERO);
+        if (uploadResult) {
+          data.background_image = uploadResult.url;
+        }
       }
 
       if ('videoBackground' in req.files && req.files['videoBackground'].length > 0) {
-        data.videoBackground = `/uploads/hero/${req.files['videoBackground'][0].filename}`;
+        const uploadResult = await uploadFileToSupabase(req.files['videoBackground'][0], BUCKETS.HERO);
+        if (uploadResult) {
+          data.video_background = uploadResult.url;
+        }
       }
     }
 
@@ -836,7 +823,10 @@ const createOrUpdateAboutContent: AsyncMulterHandler = async (req, res, next) =>
 
     // Handle image upload
     if (req.file) {
-      contentData.image = `/uploads/about/${req.file.filename}`;
+      const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.ABOUT);
+      if (uploadResult) {
+        contentData.image = uploadResult.url;
+      }
     }
 
     // Check if content already exists
@@ -946,7 +936,10 @@ const createArticle: AsyncMulterHandler = async (req, res, next) => {
 
     // Handle image upload
     if (req.file) {
-      parsedBody.image = `/uploads/blog/${req.file.filename}`;
+      const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.BLOG);
+      if (uploadResult) {
+        parsedBody.image = uploadResult.url;
+      }
     }
 
     // Set user ID from authenticated user
@@ -996,7 +989,10 @@ const updateArticle: AsyncMulterHandler = async (req, res, next) => {
 
     // Handle image upload
     if (req.file) {
-      parsedBody.image = `/uploads/blog/${req.file.filename}`;
+      const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.BLOG);
+      if (uploadResult) {
+        parsedBody.image = uploadResult.url;
+      }
     }
 
     // Set user ID from authenticated user
@@ -1337,11 +1333,19 @@ const createLocation: AsyncMulterHandler = async (req, res, next) => {
       return next();
     }
 
+    let image = null;
+    if (req.file) {
+      const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.LOCATIONS);
+      if (uploadResult) {
+        image = uploadResult.url;
+      }
+    }
+
     const locationData = {
       city,
       country,
       address: address || null,
-      image: req.file ? `/uploads/locations/${req.file.filename}` : null,
+      image,
       updated_by: (req as any).user?.id
     };
 
@@ -1375,11 +1379,19 @@ const updateLocation: AsyncMulterHandler = async (req, res, next) => {
       return next();
     }
 
+    let image = undefined;
+    if (req.file) {
+      const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.LOCATIONS);
+      if (uploadResult) {
+        image = uploadResult.url;
+      }
+    }
+
     const locationData = {
       ...(city !== undefined && { city }),
       ...(country !== undefined && { country }),
       ...(address !== undefined && { address }),
-      ...(req.file && { image: `/uploads/locations/${req.file.filename}` }),
+      ...(image !== undefined && { image }),
       updated_by: (req as any).user?.id
     };
 
@@ -1624,7 +1636,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { title, description, details, order_index, updated_by } = req.body;
       let image = req.body.image;
       if (req.file) {
-        image = `/uploads/services/${req.file.filename}`;
+        const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.SERVICES);
+        if (uploadResult) {
+          image = uploadResult.url;
+        }
       }
 
       // Parse and clean the details array
@@ -1673,7 +1688,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { title, description, details, category, order_index, updated_by } = req.body;
       let image = req.body.image;
       if (req.file) {
-        image = `/uploads/services/${req.file.filename}`;
+        const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.SERVICES);
+        if (uploadResult) {
+          image = uploadResult.url;
+        }
       }
 
       // Parse and clean the details array
@@ -1874,7 +1892,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Handle file upload if present
       if (req.file) {
-        bg_image = `/uploads/projects/${req.file.filename}`;
+        const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.PROJECTS);
+        if (uploadResult) {
+          bg_image = uploadResult.url;
+        }
       }
 
       // Parse services array if it exists
@@ -1924,7 +1945,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Handle file upload if present
       if (req.file) {
-        bg_image = `/uploads/projects/${req.file.filename}`;
+        const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.PROJECTS);
+        if (uploadResult) {
+          bg_image = uploadResult.url;
+        }
       }
 
       // Parse services array if it exists
@@ -2158,7 +2182,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let image = parsedData.image;
       if (req.file) {
-        image = `/uploads/blog/${req.file.filename}`;
+        const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.BLOG);
+        if (uploadResult) {
+          image = uploadResult.url;
+        }
       }
 
       // Generate slug from title
@@ -2270,7 +2297,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Handle image upload or existing image reference
       let image = parsedData.image;
       if (req.file) {
-        image = `/uploads/blog/${req.file.filename}`;
+        const uploadResult = await uploadFileToSupabase(req.file, BUCKETS.BLOG);
+        if (uploadResult) {
+          image = uploadResult.url;
+        }
       }
 
       // Generate new slug if title changed

@@ -59,12 +59,35 @@ async function migrateData() {
 
         // Insert data into Supabase using raw SQL
         for (const row of data) {
-          const columns = Object.keys(row);
-          const values = Object.values(row);
-          const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
-          const query = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`;
+          try {
+            const columns = Object.keys(row);
+            const values = Object.values(row).map((value, index) => {
+              const columnName = columns[index];
+              // Handle null values and ensure proper serialization
+              if (value === null || value === undefined) return null;
+              // Special handling for PostgreSQL array columns
+              if (tableName === 'team_members' && columnName === 'expertise' && Array.isArray(value)) {
+                if (value.length === 0) {
+                  return '{}'; // Empty array in PostgreSQL syntax
+                }
+                // For non-empty arrays, convert to PostgreSQL array literal
+                return '{' + value.map(item => `"${item}"`).join(',') + '}';
+              }
+              // Convert all other objects and arrays to JSON strings for database storage
+              if (typeof value === 'object' || Array.isArray(value)) {
+                return JSON.stringify(value);
+              }
+              return value;
+            });
+            const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
+            const query = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`;
 
-          await supabaseClient.unsafe(query, values);
+            await supabaseClient.unsafe(query, values);
+          } catch (rowError) {
+            console.error(`   ❌ Error inserting row into ${tableName}:`, rowError);
+            console.error(`   Row data:`, row);
+            // Continue with next row
+          }
         }
 
         console.log(`   ✅ Migrated ${data.length} records to ${tableName}`);

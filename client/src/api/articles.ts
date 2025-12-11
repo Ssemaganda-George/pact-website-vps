@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { BlogArticle } from '../../../shared/schema';
+import { BlogArticle } from '@shared/schema';
 
 // Get all articles, optionally filtered by published status
 export const getArticles = async (publishedOnly: boolean = false) => {

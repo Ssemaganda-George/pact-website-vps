@@ -167,20 +167,8 @@ const TeamMemberDetail = () => {
   // Function to properly format image paths
   const getImagePath = useCallback((imagePath: string | null) => {
     if (!imagePath) return undefined;
-
-    // If it's already a full URL, return it
-    if (imagePath.startsWith('http')) {
-      return imagePath;
-    }
-
-    // If it contains uploads/team, it's a relative path from the root
-    if (imagePath.includes('/uploads/team/')) {
-      // Make sure the path starts with a slash
-      return imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-    }
-
-    // For just a filename, construct the relative path
-    return `/uploads/team/${imagePath}`;
+    // All images are now full Supabase Storage URLs
+    return imagePath;
   }, []);
 
   // Memoize the link handlers to prevent re-renders

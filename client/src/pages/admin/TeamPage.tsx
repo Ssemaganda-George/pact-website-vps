@@ -245,7 +245,12 @@ export default function TeamPage() {
       const data = await response.json();
       
       if (data.success) {
-        setTeamMembers(data.data);
+        // Map API response fields (snake_case) to component interface fields (camelCase)
+        const mappedMembers = data.data.map((member: any) => ({
+          ...member,
+          metaDescription: member.meta_description,
+        }));
+        setTeamMembers(mappedMembers);
       } else {
         throw new Error(data.message || "Failed to fetch team members");
       }
@@ -604,7 +609,7 @@ export default function TeamPage() {
                 </div>
                 {member.image && (
                   <img
-                    src={member.image.includes('://') ? member.image : `/uploads/team/${member.image}`}
+                    src={member.image}
                     alt={member.name}
                     className="w-full aspect-[3/4] object-cover rounded-md"
                     onError={(e) => {
@@ -930,9 +935,7 @@ export default function TeamPage() {
                     {imagePreview ? 'New image preview:' : 'Current image:'}
                   </p>
                   <img
-                    src={imagePreview || (selectedMember?.image && selectedMember.image.includes('://') 
-                      ? selectedMember.image 
-                      : selectedMember?.image ? `/uploads/team/${selectedMember.image}` : '')}
+                    src={imagePreview || selectedMember?.image || ''}
                     alt={selectedMember?.name || 'Preview'}
                     className="w-32 h-32 object-cover rounded-md"
                   />

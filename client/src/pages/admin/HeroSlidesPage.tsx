@@ -104,7 +104,21 @@ const HeroSlidesPage = () => {
         const data = await response.json();
         
         if (data.success) {
-          setSlides(data.data);
+          // Map API response fields (snake_case) to component interface (camelCase)
+          const mappedSlides = data.data.map((slide: any) => ({
+            id: slide.id,
+            title: slide.title,
+            subtitle: slide.subtitle,
+            description: slide.description,
+            actionText: slide.action_text,
+            actionLink: slide.action_link,
+            backgroundImage: slide.background_image,
+            category: slide.category,
+            videoBackground: slide.video_background,
+            accentColor: slide.accent_color,
+            order_index: slide.order_index
+          }));
+          setSlides(mappedSlides);
         } else {
           toast({
             title: 'Error',
@@ -193,9 +207,9 @@ const HeroSlidesPage = () => {
     try {
       const formDataObj = new FormData();
       
-      // Add text fields
+      // Add text fields (exclude backgroundImage if file is selected)
       Object.entries(formData).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
+        if (value !== null && value !== undefined && !(key === 'backgroundImage' && bgImageFile)) {
           formDataObj.append(key, value.toString());
         }
       });
@@ -251,9 +265,9 @@ const HeroSlidesPage = () => {
     try {
       const formDataObj = new FormData();
       
-      // Add text fields
+      // Add text fields (exclude backgroundImage if file is selected)
       Object.entries(formData).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
+        if (value !== null && value !== undefined && !(key === 'backgroundImage' && bgImageFile)) {
           formDataObj.append(key, value.toString());
         }
       });

@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { Location } from '../../../shared/schema';
+import type { Location } from '@shared/schema';
 
 type LocationInput = {
   city: string;

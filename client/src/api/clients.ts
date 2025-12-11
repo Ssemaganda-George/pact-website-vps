@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { ClientContent } from '../../../shared/schema';
+import type { ClientContent } from '@shared/schema';
 
 // Define interface for Client data
 export interface Client {

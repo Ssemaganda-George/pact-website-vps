@@ -19,10 +19,8 @@ import {
   footerContent, type InsertFooterContent, type FooterContent,
   locations, type Location, type InsertLocation
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, and, desc, asc, isNull, is, not, sql, or, like } from "drizzle-orm";
+import { supabase } from "./db";
 import bcrypt from "bcrypt";
-import { pgTable, serial, text, timestamp, integer, unique, boolean, json } from 'drizzle-orm/pg-core';
 import slugify from "slugify";
 
 export interface IStorage {
@@ -38,8 +36,8 @@ export interface IStorage {
 
   // Team Member functionality
   createTeamMember(data: Omit<TeamMember, 'id' | 'createdAt' | 'updatedAt'> & { serviceIds?: number[] }): Promise<TeamMember>;
-  getTeamMember(id: number): Promise<TeamMember>;
-  getTeamMemberBySlug(slug: string): Promise<TeamMember>;
+  getTeamMember(id: number): Promise<TeamMember | undefined>;
+  getTeamMemberBySlug(slug: string): Promise<TeamMember | undefined>;
   getAllTeamMembers(): Promise<TeamMember[]>;
   updateTeamMember(id: number, data: Partial<TeamMember> & { serviceIds?: number[] }): Promise<TeamMember>;
   deleteTeamMember(id: number): Promise<boolean>;
@@ -128,45 +126,69 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // User management
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) return undefined;
+    return data;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .single();
+    if (error) return undefined;
+    return data;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     // Hash the password before storing
     const hashedPassword = await bcrypt.hash(insertUser.password, 10);
-    const [user] = await db
-      .insert(users)
-      .values({ ...insertUser, password: hashedPassword })
-      .returning();
-    return user;
+    const { data, error } = await supabase
+      .from('users')
+      .insert([{
+        ...insertUser,
+        password: hashedPassword
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   }
 
   // Contact form functionality
   async createContactMessage(message: InsertContactMessage): Promise<ContactMessage> {
-    const [contactMessage] = await db
-      .insert(contactMessages)
-      .values(message)
-      .returning();
-    return contactMessage;
+    const { data, error } = await supabase
+      .from('contact_messages')
+      .insert([message])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   }
 
   async getContactMessages(): Promise<ContactMessage[]> {
-    return db.select().from(contactMessages).orderBy(desc(contactMessages.created_at));
+    const { data, error } = await supabase
+      .from('contact_messages')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
   }
 
   async markContactMessageAsRead(id: number): Promise<ContactMessage | undefined> {
-    const [contactMessage] = await db
-      .update(contactMessages)
-      .set({ is_read: true })
-      .where(eq(contactMessages.id, id))
-      .returning();
-    return contactMessage;
+    const { data, error } = await supabase
+      .from('contact_messages')
+      .update({ is_read: true })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   }
 
   // Team Member functionality
@@ -174,85 +196,106 @@ export class DatabaseStorage implements IStorage {
     const { serviceIds, ...memberData } = data;
 
     // Insert team member
-    const [member] = await db
-      .insert(teamMembersTable)
-      .values({
+    const { data: member, error: memberError } = await supabase
+      .from('team_members')
+      .insert({
         ...memberData,
         slug: slugify(memberData.name, { lower: true, strict: true }),
-        createdAt: new Date(),
-        updatedAt: new Date()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
-      .returning();
+      .select()
+      .single();
+
+    if (memberError) throw memberError;
 
     // If serviceIds provided, create relationships
     if (serviceIds && serviceIds.length > 0) {
-      await db
-        .insert(teamMemberServices)
-        .values(
+      const { error: servicesError } = await supabase
+        .from('team_member_services')
+        .insert(
           serviceIds.map(serviceId => ({
             team_member_id: member.id,
             service_id: serviceId
           }))
         );
+
+      if (servicesError) throw servicesError;
     }
 
     return member;
   }
 
-  async getTeamMember(id: number): Promise<TeamMember> {
-    const [member] = await db
-      .select()
-      .from(teamMembersTable)
-      .where(eq(teamMembersTable.id, id));
-    return member;
+  async getTeamMember(id: number): Promise<TeamMember | undefined> {
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
-  async getTeamMemberBySlug(slug: string): Promise<TeamMember> {
-    const [member] = await db
-      .select()
-      .from(teamMembersTable)
-      .where(eq(teamMembersTable.slug, slug));
-    return member;
+  async getTeamMemberBySlug(slug: string): Promise<TeamMember | undefined> {
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async getAllTeamMembers(): Promise<TeamMember[]> {
-    const members = await db
-      .select()
-      .from(teamMembersTable)
-      .orderBy(asc(teamMembersTable.name));
-    return members;
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('*')
+      .order('name');
+
+    if (error) throw error;
+    return data || [];
   }
 
   async updateTeamMember(id: number, data: Partial<TeamMember> & { serviceIds?: number[] }): Promise<TeamMember> {
     const { serviceIds, ...memberData } = data;
 
     // Update team member
-    const [updatedMember] = await db
-      .update(teamMembersTable)
-      .set({
+    const { data: updatedMember, error: updateError } = await supabase
+      .from('team_members')
+      .update({
         ...memberData,
-        updatedAt: new Date()
+        updated_at: new Date().toISOString()
       })
-      .where(eq(teamMembersTable.id, id))
-      .returning();
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
 
     // If serviceIds provided, update relationships
     if (serviceIds !== undefined) {
       // Delete existing relationships
-      await db
-        .delete(teamMemberServices)
-        .where(eq(teamMemberServices.team_member_id, id));
+      const { error: deleteError } = await supabase
+        .from('team_member_services')
+        .delete()
+        .eq('team_member_id', id);
+
+      if (deleteError) throw deleteError;
 
       // Add new relationships if any
       if (serviceIds.length > 0) {
-        await db
-          .insert(teamMemberServices)
-          .values(
+        const { error: insertError } = await supabase
+          .from('team_member_services')
+          .insert(
             serviceIds.map(serviceId => ({
               team_member_id: id,
               service_id: serviceId
             }))
           );
+
+        if (insertError) throw insertError;
       }
     }
 
@@ -261,247 +304,320 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTeamMember(id: number): Promise<boolean> {
     // Junction table entries will be automatically deleted due to ON DELETE CASCADE
-    const result = await db
-      .delete(teamMembersTable)
-      .where(eq(teamMembersTable.id, id));
-    return !!result;
+    const { error } = await supabase
+      .from('team_members')
+      .delete()
+      .eq('id', id);
+
+    return !error;
   }
 
   async getTeamMemberServices(teamMemberId: number): Promise<ServiceContent[]> {
-    const relations = await db
-      .select({
-        service: serviceContent
-      })
-      .from(teamMemberServices)
-      .innerJoin(serviceContent, eq(teamMemberServices.service_id, serviceContent.id))
-      .where(eq(teamMemberServices.team_member_id, teamMemberId));
+    // First get the service IDs for this team member
+    const { data: relations, error: relationsError } = await supabase
+      .from('team_member_services')
+      .select('service_id')
+      .eq('team_member_id', teamMemberId);
 
-    return relations.map(rel => rel.service);
+    if (relationsError) throw relationsError;
+    if (!relations || relations.length === 0) return [];
+
+    // Then get the service content
+    const serviceIds = relations.map(r => r.service_id);
+    const { data: services, error: servicesError } = await supabase
+      .from('service_content')
+      .select('*')
+      .in('id', serviceIds);
+
+    if (servicesError) throw servicesError;
+    return services || [];
   }
 
   // CMS functionality - Expertise Content
   async getExpertiseContent(id: number): Promise<ExpertiseContent | undefined> {
-    const [content] = await db
-      .select()
-      .from(expertiseContent)
-      .where(eq(expertiseContent.id, id));
-    return content || undefined;
+    const { data, error } = await supabase
+      .from('expertise_content')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) return undefined;
+    return data;
   }
 
   async getAllExpertiseContent(): Promise<ExpertiseContent[]> {
-    return db
-      .select()
-      .from(expertiseContent)
-      .orderBy(asc(expertiseContent.order_index));
+    const { data, error } = await supabase
+      .from('expertise_content')
+      .select('*')
+      .order('order_index');
+    if (error) throw error;
+    return data || [];
   }
 
   async createExpertiseContent(content: InsertExpertiseContent): Promise<ExpertiseContent> {
-    const [newContent] = await db
-      .insert(expertiseContent)
-      .values({
+    const { data, error } = await supabase
+      .from('expertise_content')
+      .insert({
         ...content,
         capabilities: content.capabilities as string[]
       })
-      .returning();
-    return newContent;
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async updateExpertiseContent(id: number, content: Partial<InsertExpertiseContent>): Promise<ExpertiseContent | undefined> {
-    const [updatedContent] = await db
-      .update(expertiseContent)
-      .set({
+    const { data, error } = await supabase
+      .from('expertise_content')
+      .update({
         ...content,
         capabilities: content.capabilities ? (content.capabilities as string[]) : undefined,
-        updated_at: new Date()
+        updated_at: new Date().toISOString()
       })
-      .where(eq(expertiseContent.id, id))
-      .returning();
-    return updatedContent;
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async deleteExpertiseContent(id: number): Promise<boolean> {
-    const result = await db
-      .delete(expertiseContent)
-      .where(eq(expertiseContent.id, id));
-    return !!result;
+    const { error } = await supabase
+      .from('expertise_content')
+      .delete()
+      .eq('id', id);
+
+    return !error;
   }
 
   // CMS functionality - Service Content
   async getServiceContent(id: number): Promise<ServiceContent | undefined> {
-    const [content] = await db
-      .select()
-      .from(serviceContent)
-      .where(eq(serviceContent.id, id));
-    return content || undefined;
+    const { data, error } = await supabase
+      .from('service_content')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async getAllServiceContent(): Promise<ServiceContent[]> {
-    return db
-      .select()
-      .from(serviceContent)
-      .orderBy(asc(serviceContent.order_index));
+    const { data, error } = await supabase
+      .from('service_content')
+      .select('*')
+      .order('order_index');
+    if (error) throw error;
+    return data || [];
   }
 
   async createServiceContent(content: InsertServiceContent): Promise<ServiceContent> {
-    const [newContent] = await db
-      .insert(serviceContent)
-      .values({
+    const { data, error } = await supabase
+      .from('service_content')
+      .insert({
         ...content,
         details: content.details as string[]
       })
-      .returning();
-    return newContent;
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async updateServiceContent(id: number, content: Partial<InsertServiceContent>): Promise<ServiceContent | undefined> {
-    const [updatedContent] = await db
-      .update(serviceContent)
-      .set({
+    const { data, error } = await supabase
+      .from('service_content')
+      .update({
         ...content,
         details: content.details ? (content.details as string[]) : undefined,
-        updated_at: new Date()
+        updated_at: new Date().toISOString()
       })
-      .where(eq(serviceContent.id, id))
-      .returning();
-    return updatedContent;
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async deleteServiceContent(id: number): Promise<boolean> {
-    const result = await db
-      .delete(serviceContent)
-      .where(eq(serviceContent.id, id));
-    return !!result;
+    const { error } = await supabase
+      .from('service_content')
+      .delete()
+      .eq('id', id);
+
+    return !error;
   }
 
   // CMS functionality - Client Content
   async getClientContent(id: number): Promise<ClientContent | undefined> {
-    const [content] = await db
-      .select()
-      .from(clientContent)
-      .where(eq(clientContent.id, id));
-    return content || undefined;
+    const { data, error } = await supabase
+      .from('client_content')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async getAllClientContent(type?: string): Promise<ClientContent[]> {
+    let query = supabase
+      .from('client_content')
+      .select('*')
+      .order('type')
+      .order('order_index');
+
     if (type) {
-      return db
-        .select()
-        .from(clientContent)
-        .where(eq(clientContent.type, type))
-        .orderBy(asc(clientContent.order_index));
+      const { data, error } = await supabase
+        .from('client_content')
+        .select('*')
+        .eq('type', type)
+        .order('order_index');
+      if (error) throw error;
+      return data || [];
     }
 
-    return db
-      .select()
-      .from(clientContent)
-      .orderBy(clientContent.type, asc(clientContent.order_index));
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
   }
 
   async createClientContent(content: InsertClientContent): Promise<ClientContent> {
-    const [newContent] = await db
-      .insert(clientContent)
-      .values(content)
-      .returning();
-    return newContent;
+    const { data, error } = await supabase
+      .from('client_content')
+      .insert(content)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async updateClientContent(id: number, content: Partial<InsertClientContent>): Promise<ClientContent | undefined> {
-    const [updatedContent] = await db
-      .update(clientContent)
-      .set({
+    const { data, error } = await supabase
+      .from('client_content')
+      .update({
         ...content,
-        updated_at: new Date()
+        updated_at: new Date().toISOString()
       })
-      .where(eq(clientContent.id, id))
-      .returning();
-    return updatedContent;
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async deleteClientContent(id: number): Promise<boolean> {
-    const result = await db
-      .delete(clientContent)
-      .where(eq(clientContent.id, id));
-    return !!result;
+    const { error } = await supabase
+      .from('client_content')
+      .delete()
+      .eq('id', id);
+
+    return !error;
   }
 
   // CMS functionality - Project Content
   async getProjectContent(id: number): Promise<ProjectContent | undefined> {
-    const [content] = await db
-      .select()
-      .from(projectContent)
-      .where(eq(projectContent.id, id));
-    return content || undefined;
+    const { data, error } = await supabase
+      .from('project_content')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async getAllProjectContent(): Promise<ProjectContent[]> {
-    return db
-      .select()
-      .from(projectContent)
-      .orderBy(asc(projectContent.order_index));
+    const { data, error } = await supabase
+      .from('project_content')
+      .select('*')
+      .order('order_index');
+    if (error) throw error;
+    return data || [];
   }
 
   async createProjectContent(content: InsertProjectContent): Promise<ProjectContent> {
-    const [newContent] = await db
-      .insert(projectContent)
-      .values({
+    const { data, error } = await supabase
+      .from('project_content')
+      .insert({
         ...content,
-        updated_at: new Date()
+        updated_at: new Date().toISOString()
       })
-      .returning();
-    return newContent;
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async updateProjectContent(id: number, content: Partial<InsertProjectContent>): Promise<ProjectContent | undefined> {
-    const [updatedContent] = await db
-      .update(projectContent)
-      .set({
+    const { data, error } = await supabase
+      .from('project_content')
+      .update({
         ...content,
-        updated_at: new Date()
+        updated_at: new Date().toISOString()
       })
-      .where(eq(projectContent.id, id))
-      .returning();
-    return updatedContent;
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async deleteProjectContent(id: number): Promise<boolean> {
-    const result = await db
-      .delete(projectContent)
-      .where(eq(projectContent.id, id));
-    return !!result;
+    const { error } = await supabase
+      .from('project_content')
+      .delete()
+      .eq('id', id);
+
+    return !error;
   }
 
   // CMS functionality - Blog Articles
   async getBlogArticle(id: number): Promise<BlogArticle | undefined> {
-    const [article] = await db
-      .select()
-      .from(blogArticles)
-      .where(eq(blogArticles.id, id));
-    return article || undefined;
+    const { data, error } = await supabase
+      .from('blog_articles')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async getBlogArticleBySlug(slug: string): Promise<BlogArticle | undefined> {
-    const [article] = await db
-      .select()
-      .from(blogArticles)
-      .where(eq(blogArticles.slug, slug));
-    return article || undefined;
+    const { data, error } = await supabase
+      .from('blog_articles')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async getAllBlogArticles(publishedOnly: boolean = false): Promise<BlogArticle[]> {
-    let query = db
-      .select()
-      .from(blogArticles)
-      .orderBy(desc(blogArticles.created_at));
+    let query = supabase
+      .from('blog_articles')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (publishedOnly) {
-      return query
-        .where(and(
-          eq(blogArticles.status, 'published'),
-          not(isNull(blogArticles.published_at))
-        ));
+      query = query
+        .eq('status', 'published')
+        .not('published_at', 'is', null);
     }
 
-    return query;
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
   }
 
   async createBlogArticle(article: InsertBlogArticle): Promise<BlogArticle> {
@@ -510,14 +626,17 @@ export class DatabaseStorage implements IStorage {
       article.published_at = new Date();
     }
 
-    const [newArticle] = await db
-      .insert(blogArticles)
-      .values({
+    const { data, error } = await supabase
+      .from('blog_articles')
+      .insert({
         ...article,
         keywords: article.keywords ? (article.keywords as string[]) : []
       })
-      .returning();
-    return newArticle;
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async updateBlogArticle(id: number, article: Partial<InsertBlogArticle>): Promise<BlogArticle | undefined> {
@@ -529,97 +648,123 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    const [updatedArticle] = await db
-      .update(blogArticles)
-      .set({
+    const { data, error } = await supabase
+      .from('blog_articles')
+      .update({
         ...article,
         keywords: article.keywords ? (article.keywords as string[]) : undefined,
-        updated_at: new Date()
+        updated_at: new Date().toISOString()
       })
-      .where(eq(blogArticles.id, id))
-      .returning();
-    return updatedArticle;
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async deleteBlogArticle(id: number): Promise<boolean> {
     // Delete associated service and project relationships first
-    await db
-      .delete(blogArticleServices)
-      .where(eq(blogArticleServices.blog_article_id, id));
+    const { error: servicesError } = await supabase
+      .from('blog_article_services')
+      .delete()
+      .eq('blog_article_id', id);
 
-    await db
-      .delete(blogArticleProjects)
-      .where(eq(blogArticleProjects.blog_article_id, id));
+    if (servicesError) throw servicesError;
 
-    const result = await db
-      .delete(blogArticles)
-      .where(eq(blogArticles.id, id));
-    return !!result;
+    const { error: projectsError } = await supabase
+      .from('blog_article_projects')
+      .delete()
+      .eq('blog_article_id', id);
+
+    if (projectsError) throw projectsError;
+
+    const { error } = await supabase
+      .from('blog_articles')
+      .delete()
+      .eq('id', id);
+
+    return !error;
   }
 
   // Blog Article Services Relationship Methods
   async getBlogArticleServices(blogArticleId: number): Promise<ServiceContent[]> {
-    const relations = await db
-      .select({
-        service: serviceContent
-      })
-      .from(blogArticleServices)
-      .innerJoin(serviceContent, eq(blogArticleServices.service_id, serviceContent.id))
-      .where(eq(blogArticleServices.blog_article_id, blogArticleId));
+    // First get the service IDs for this blog article
+    const { data: relations, error: relationsError } = await supabase
+      .from('blog_article_services')
+      .select('service_id')
+      .eq('blog_article_id', blogArticleId);
 
-    return relations.map(rel => rel.service);
+    if (relationsError) throw relationsError;
+    if (!relations || relations.length === 0) return [];
+
+    // Then get the service content
+    const serviceIds = relations.map(r => r.service_id);
+    const { data: services, error: servicesError } = await supabase
+      .from('service_content')
+      .select('*')
+      .in('id', serviceIds);
+
+    if (servicesError) throw servicesError;
+    return services || [];
   }
 
   async addBlogArticleService(blogArticleId: number, serviceId: number): Promise<BlogArticleService> {
     // Check if relationship already exists
-    const [existing] = await db
-      .select()
-      .from(blogArticleServices)
-      .where(and(
-        eq(blogArticleServices.blog_article_id, blogArticleId),
-        eq(blogArticleServices.service_id, serviceId)
-      ));
+    const { data: existing, error: checkError } = await supabase
+      .from('blog_article_services')
+      .select('*')
+      .eq('blog_article_id', blogArticleId)
+      .eq('service_id', serviceId)
+      .single();
 
+    if (checkError && checkError.code !== 'PGRST116') throw checkError; // PGRST116 is "not found"
     if (existing) return existing;
 
-    const [relation] = await db
-      .insert(blogArticleServices)
-      .values({
+    const { data, error } = await supabase
+      .from('blog_article_services')
+      .insert({
         blog_article_id: blogArticleId,
         service_id: serviceId
       })
-      .returning();
+      .select()
+      .single();
 
-    return relation;
+    if (error) throw error;
+    return data;
   }
 
   async removeBlogArticleService(blogArticleId: number, serviceId: number): Promise<boolean> {
-    const result = await db
-      .delete(blogArticleServices)
-      .where(and(
-        eq(blogArticleServices.blog_article_id, blogArticleId),
-        eq(blogArticleServices.service_id, serviceId)
-      ));
+    const { error } = await supabase
+      .from('blog_article_services')
+      .delete()
+      .eq('blog_article_id', blogArticleId)
+      .eq('service_id', serviceId);
 
-    return !!result;
+    return !error;
   }
 
   async updateBlogArticleServices(blogArticleId: number, serviceIds: number[]): Promise<boolean> {
     // Delete existing relationships
-    await db
-      .delete(blogArticleServices)
-      .where(eq(blogArticleServices.blog_article_id, blogArticleId));
+    const { error: deleteError } = await supabase
+      .from('blog_article_services')
+      .delete()
+      .eq('blog_article_id', blogArticleId);
+
+    if (deleteError) throw deleteError;
 
     // Add new relationships
     if (serviceIds.length > 0) {
-      await db
-        .insert(blogArticleServices)
-        .values(
+      const { error: insertError } = await supabase
+        .from('blog_article_services')
+        .insert(
           serviceIds.map(serviceId => ({
             blog_article_id: blogArticleId,
             service_id: serviceId
           }))
         );
+
+      if (insertError) throw insertError;
     }
 
     return true;
@@ -627,67 +772,82 @@ export class DatabaseStorage implements IStorage {
 
   // Blog Article Projects Relationship Methods
   async getBlogArticleProjects(blogArticleId: number): Promise<ProjectContent[]> {
-    const relations = await db
-      .select({
-        project: projectContent
-      })
-      .from(blogArticleProjects)
-      .innerJoin(projectContent, eq(blogArticleProjects.project_id, projectContent.id))
-      .where(eq(blogArticleProjects.blog_article_id, blogArticleId));
+    // First get the project IDs for this blog article
+    const { data: relations, error: relationsError } = await supabase
+      .from('blog_article_projects')
+      .select('project_id')
+      .eq('blog_article_id', blogArticleId);
 
-    return relations.map(rel => rel.project);
+    if (relationsError) throw relationsError;
+    if (!relations || relations.length === 0) return [];
+
+    // Then get the project content
+    const projectIds = relations.map(r => r.project_id);
+    const { data: projects, error: projectsError } = await supabase
+      .from('project_content')
+      .select('*')
+      .in('id', projectIds);
+
+    if (projectsError) throw projectsError;
+    return projects || [];
   }
 
   async addBlogArticleProject(blogArticleId: number, projectId: number): Promise<BlogArticleProject> {
     // Check if relationship already exists
-    const [existing] = await db
-      .select()
-      .from(blogArticleProjects)
-      .where(and(
-        eq(blogArticleProjects.blog_article_id, blogArticleId),
-        eq(blogArticleProjects.project_id, projectId)
-      ));
+    const { data: existing, error: checkError } = await supabase
+      .from('blog_article_projects')
+      .select('*')
+      .eq('blog_article_id', blogArticleId)
+      .eq('project_id', projectId)
+      .single();
 
+    if (checkError && checkError.code !== 'PGRST116') throw checkError; // PGRST116 is "not found"
     if (existing) return existing;
 
-    const [relation] = await db
-      .insert(blogArticleProjects)
-      .values({
+    const { data, error } = await supabase
+      .from('blog_article_projects')
+      .insert({
         blog_article_id: blogArticleId,
         project_id: projectId
       })
-      .returning();
+      .select()
+      .single();
 
-    return relation;
+    if (error) throw error;
+    return data;
   }
 
   async removeBlogArticleProject(blogArticleId: number, projectId: number): Promise<boolean> {
-    const result = await db
-      .delete(blogArticleProjects)
-      .where(and(
-        eq(blogArticleProjects.blog_article_id, blogArticleId),
-        eq(blogArticleProjects.project_id, projectId)
-      ));
+    const { error } = await supabase
+      .from('blog_article_projects')
+      .delete()
+      .eq('blog_article_id', blogArticleId)
+      .eq('project_id', projectId);
 
-    return !!result;
+    return !error;
   }
 
   async updateBlogArticleProjects(blogArticleId: number, projectIds: number[]): Promise<boolean> {
     // Delete existing relationships
-    await db
-      .delete(blogArticleProjects)
-      .where(eq(blogArticleProjects.blog_article_id, blogArticleId));
+    const { error: deleteError } = await supabase
+      .from('blog_article_projects')
+      .delete()
+      .eq('blog_article_id', blogArticleId);
+
+    if (deleteError) throw deleteError;
 
     // Add new relationships
     if (projectIds.length > 0) {
-      await db
-        .insert(blogArticleProjects)
-        .values(
+      const { error: insertError } = await supabase
+        .from('blog_article_projects')
+        .insert(
           projectIds.map(projectId => ({
             blog_article_id: blogArticleId,
             project_id: projectId
           }))
         );
+
+      if (insertError) throw insertError;
     }
 
     return true;
@@ -695,124 +855,190 @@ export class DatabaseStorage implements IStorage {
 
   // CMS functionality - Hero Slides
   async getHeroSlide(id: number): Promise<HeroSlide | undefined> {
-    const [slide] = await db.select().from(heroSlides).where(eq(heroSlides.id, id));
-    return slide || undefined;
+    const { data, error } = await supabase
+      .from('hero_slides')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async getAllHeroSlides(): Promise<HeroSlide[]> {
-    return db.select().from(heroSlides).orderBy(asc(heroSlides.order_index));
+    const { data, error } = await supabase
+      .from('hero_slides')
+      .select('*')
+      .order('order_index');
+    if (error) throw error;
+    return data || [];
   }
 
   async createHeroSlide(slide: InsertHeroSlide): Promise<HeroSlide> {
-    const [newSlide] = await db
-      .insert(heroSlides)
-      .values({
+    const { data, error } = await supabase
+      .from('hero_slides')
+      .insert([{
         ...slide,
-        updated_at: new Date()
-      })
-      .returning();
-    return newSlide;
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   }
 
   async updateHeroSlide(id: number, slide: Partial<InsertHeroSlide>): Promise<HeroSlide | undefined> {
-    const [updatedSlide] = await db
-      .update(heroSlides)
-      .set({
+    const { data, error } = await supabase
+      .from('hero_slides')
+      .update({
         ...slide,
-        updated_at: new Date()
+        updated_at: new Date().toISOString()
       })
-      .where(eq(heroSlides.id, id))
-      .returning();
-    return updatedSlide;
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   }
 
   async deleteHeroSlide(id: number): Promise<boolean> {
-    const result = await db
-      .delete(heroSlides)
-      .where(eq(heroSlides.id, id));
-    return !!result;
+    const { error } = await supabase
+      .from('hero_slides')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    return true;
   }
 
   // CMS functionality - About Content
   async getAboutContent(): Promise<AboutContent | undefined> {
-    const [content] = await db.select().from(aboutContent);
-    return content || undefined;
+    const { data, error } = await supabase
+      .from('about_content')
+      .select('*')
+      .limit(1)
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async createAboutContent(content: InsertAboutContent): Promise<AboutContent> {
-    const [newContent] = await db
-      .insert(aboutContent)
-      .values(content as any)
-      .returning();
-    return newContent;
+    const { data, error } = await supabase
+      .from('about_content')
+      .insert(content as any)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async updateAboutContent(id: number, content: Partial<InsertAboutContent>): Promise<AboutContent | undefined> {
-    const [updatedContent] = await db
-      .update(aboutContent)
-      .set({
+    const { data, error } = await supabase
+      .from('about_content')
+      .update({
         ...content,
-        updated_at: new Date()
+        updated_at: new Date().toISOString()
       } as any)
-      .where(eq(aboutContent.id, id))
-      .returning();
-    return updatedContent;
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   // Impact Stats Methods
   async getAllImpactStats(): Promise<ImpactStat[]> {
-    return db.select().from(impactStats).orderBy(impactStats.order_index);
+    const { data, error } = await supabase
+      .from('impact_stats')
+      .select('*')
+      .order('order_index');
+
+    if (error) throw error;
+    return data || [];
   }
 
   async getImpactStat(id: number): Promise<ImpactStat | undefined> {
-    const [stat] = await db.select().from(impactStats).where(eq(impactStats.id, id));
-    return stat;
+    const { data, error } = await supabase
+      .from('impact_stats')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async createImpactStat(stat: InsertImpactStat): Promise<ImpactStat> {
-    const [newStat] = await db.insert(impactStats).values(stat).returning();
-    return newStat;
+    const { data, error } = await supabase
+      .from('impact_stats')
+      .insert(stat)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async updateImpactStat(id: number, stat: Partial<InsertImpactStat>): Promise<ImpactStat | undefined> {
-    const [updatedStat] = await db
-      .update(impactStats)
-      .set(stat)
-      .where(eq(impactStats.id, id))
-      .returning();
-    return updatedStat;
+    const { data, error } = await supabase
+      .from('impact_stats')
+      .update(stat)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async deleteImpactStat(id: number): Promise<boolean> {
-    const result = await db.delete(impactStats).where(eq(impactStats.id, id));
-    return (result.rowCount ?? 0) > 0;
+    const { error } = await supabase
+      .from('impact_stats')
+      .delete()
+      .eq('id', id);
+
+    return !error;
   }
 
   // Footer Content methods
   async getFooterContent(): Promise<FooterContent | undefined> {
-    const [content] = await db.select().from(footerContent).limit(1);
-    return content;
+    const { data, error } = await supabase
+      .from('footer_content')
+      .select('*')
+      .limit(1)
+      .single();
+
+    if (error) return undefined;
+    return data;
   }
 
   async createFooterContent(content: InsertFooterContent): Promise<FooterContent> {
-    const [result] = await db
-      .insert(footerContent)
-      .values(content as any)
-      .returning();
-    return result;
+    const { data, error } = await supabase
+      .from('footer_content')
+      .insert(content as any)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async updateFooterContent(id: number, content: Partial<InsertFooterContent>): Promise<FooterContent | undefined> {
     try {
-      const [result] = await db
-        .update(footerContent)
-        .set({
+      const { data, error } = await supabase
+        .from('footer_content')
+        .update({
           ...content,
-          updated_at: new Date(),
+          updated_at: new Date().toISOString(),
         } as any)
-        .where(eq(footerContent.id, id))
-        .returning();
-      return result;
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) return undefined;
+      return data;
     } catch (error) {
       console.error('Error updating footer content:', error);
       return undefined;
@@ -821,46 +1047,58 @@ export class DatabaseStorage implements IStorage {
 
   // Location functionality
   async getLocations(): Promise<Location[]> {
-    return db.select().from(locations).orderBy(asc(locations.city));
+    const { data, error } = await supabase
+      .from('locations')
+      .select('*')
+      .order('city');
+    if (error) throw error;
+    return data || [];
   }
 
   async getLocation(id: number): Promise<Location | undefined> {
-    const [location] = await db
-      .select()
-      .from(locations)
-      .where(eq(locations.id, id));
-    return location || undefined;
+    const { data, error } = await supabase
+      .from('locations')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) return undefined;
+    return data;
   }
 
   async createLocation(data: InsertLocation): Promise<Location> {
-    const [location] = await db
-      .insert(locations)
-      .values({
+    const { data: location, error } = await supabase
+      .from('locations')
+      .insert({
         ...data,
-        created_at: new Date(),
-        updated_at: new Date()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
-      .returning();
+      .select()
+      .single();
+    if (error) throw error;
     return location;
   }
 
   async updateLocation(id: number, data: Partial<InsertLocation>): Promise<Location | undefined> {
-    const [location] = await db
-      .update(locations)
-      .set({
+    const { data: location, error } = await supabase
+      .from('locations')
+      .update({
         ...data,
-        updated_at: new Date()
+        updated_at: new Date().toISOString()
       })
-      .where(eq(locations.id, id))
-      .returning();
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) return undefined;
     return location;
   }
 
   async deleteLocation(id: number): Promise<boolean> {
-    const result = await db
-      .delete(locations)
-      .where(eq(locations.id, id));
-    return !!result;
+    const { error } = await supabase
+      .from('locations')
+      .delete()
+      .eq('id', id);
+    return !error;
   }
 }
 

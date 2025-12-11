@@ -41,7 +41,13 @@ const Footer = () => {
         const response = await fetch('/api/footer');
         const data = await response.json();
         
+        console.log('Footer API response:', data);
+        
         if (data.success && data.data) {
+          console.log('Footer data:', data.data);
+          console.log('Social links:', data.data.social_links);
+          console.log('Social links type:', typeof data.data.social_links);
+          console.log('Is array:', Array.isArray(data.data.social_links));
           setFooterData(data.data);
         } else {
           console.error('Failed to fetch footer data');
@@ -77,7 +83,7 @@ const Footer = () => {
                 {footerData.company_description}
               </p>
             )}
-            {footerData?.social_links && footerData.social_links.length > 0 && (
+            {footerData?.social_links && Array.isArray(footerData.social_links) && footerData.social_links.length > 0 ? (
               <div className="flex space-x-4">
                 {footerData.social_links.map((link, index) => (
                   <a 
@@ -91,6 +97,36 @@ const Footer = () => {
                     <i className={link.icon + " text-xl"}></i>
                   </a>
                 ))}
+              </div>
+            ) : (
+              <div className="flex space-x-4">
+                <a 
+                  href="#" 
+                  className="text-gray-400 hover:text-accent transition-colors" 
+                  aria-label="LinkedIn"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <i className="fab fa-linkedin text-xl"></i>
+                </a>
+                <a 
+                  href="#" 
+                  className="text-gray-400 hover:text-accent transition-colors" 
+                  aria-label="Twitter"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <i className="fab fa-twitter text-xl"></i>
+                </a>
+                <a 
+                  href="#" 
+                  className="text-gray-400 hover:text-accent transition-colors" 
+                  aria-label="Facebook"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <i className="fab fa-facebook text-xl"></i>
+                </a>
               </div>
             )}
           </div>

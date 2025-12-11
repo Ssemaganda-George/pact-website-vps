@@ -7,7 +7,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin, Mail, Building, Phone, Globe } from 'lucide-react';
 import * as locationsApi from '@/api/locations';
-import type { LocationContent } from '../../../shared/schema';
+import type { Location } from '@shared/schema';
 
 // Form validation schema
 const contactFormSchema = z.object({
@@ -135,7 +135,7 @@ const Contact = () => {
               </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
-              {locations.map((location: LocationContent) => (
+              {locations.map((location: Location) => (
                 <div
                   key={location.id}
                   className="relative group overflow-hidden rounded-lg shadow-md"
@@ -145,7 +145,7 @@ const Contact = () => {
                     <div className="relative h-36">
                       <img
                         src={location.image}
-                        alt={location.name}
+                        alt={`${location.city}, ${location.country}`}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>

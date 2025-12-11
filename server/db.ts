@@ -1,22 +1,22 @@
-import { Pool } from 'pg';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import * as schema from "@shared/schema";
-
+import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
+
 config();
 
-// Optimized connection pool for Neon Database
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 10, // Reduced from 20 to prevent connection exhaustion
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 20000, // Increased timeout for Neon connections
-  ssl: process.env.DATABASE_URL?.includes('neon.tech') ? { rejectUnauthorized: false } : undefined,
+// Initialize Supabase client
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
 });
 
-// Handle pool errors
-pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-});
-
-export const db = drizzle(pool, { schema });
+// For backward compatibility, export db as supabase client
+export const db = supabase;

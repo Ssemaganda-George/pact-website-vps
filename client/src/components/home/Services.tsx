@@ -12,7 +12,7 @@ const ServiceCard = ({ service }: { service: ServiceItem }) => {
       {/* Image Header with Badge */}
       <div className="relative h-52">
         <img 
-          src={service.image?.startsWith('http') ? service.image : `${service.image}`} 
+          src={service.image} 
           alt={service.title} 
           className="w-full h-full object-cover"
           onError={(e) => {
