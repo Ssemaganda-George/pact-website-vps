@@ -15,6 +15,9 @@ interface ProjectPreview {
   description: string;
   organization: string;
   image?: string;
+  category?: string;
+  duration?: string;
+  location?: string;
 }
 
 const ServiceDetailPage = () => {

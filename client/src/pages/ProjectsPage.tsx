@@ -86,7 +86,7 @@ export default function ProjectsPage() {
   // Get unique categories from all projects
   const uniqueCategories = Array.from(
     new Set(
-      projects.map(project => project.category)
+      projects.map(project => project.category).filter(Boolean)
     )
   ).sort();
 
@@ -114,7 +114,7 @@ export default function ProjectsPage() {
   // Group and sort projects by category
   const groupedProjects = selectedCategory
     ? { [selectedCategory]: filteredProjects.sort((a, b) => (b._endDate?.getTime() || 0) - (a._endDate?.getTime() || 0)) }
-    : uniqueCategories.reduce<Record<string, typeof filteredProjects>>((acc, category) => {
+    : (uniqueCategories as string[]).reduce<Record<string, typeof filteredProjects>>((acc, category) => {
         const categoryProjects = filteredProjects.filter(p => p.category === category)
           .sort((a, b) => (b._endDate?.getTime() || 0) - (a._endDate?.getTime() || 0));
         if (categoryProjects.length > 0) {

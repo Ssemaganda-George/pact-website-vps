@@ -2,8 +2,9 @@ import { useEffect } from 'react';
 import { Link } from 'wouter';
 import expertiseAreas from '@/data/expertise';
 import CTA from '@/components/home/CTA';
+import { ExpertiseArea } from '@/types';
 
-const ExpertiseDetailCard = ({ area, index }) => {
+const ExpertiseDetailCard = ({ area, index }: { area: ExpertiseArea; index: number }) => {
   return (
     <div 
       className="bg-white rounded-lg shadow-lg overflow-hidden mb-12 sm:mb-16" 

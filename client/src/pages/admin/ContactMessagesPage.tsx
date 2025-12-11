@@ -35,7 +35,7 @@ export default function ContactMessagesPage() {
   const queryClient = useQueryClient();
   
   // Fetch contact messages
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<{ success: boolean; data: any[] }>({
     queryKey: ['/api/admin/contact'],
     queryFn: getQueryFn({ 
       on401: 'returnNull'
@@ -47,12 +47,7 @@ export default function ContactMessagesPage() {
   const markAsReadMutation = useMutation({
     mutationFn: async (id: number) => {
       const apiKey = localStorage.getItem('cms-api-key');
-      const response = await apiRequest(`/api/admin/contact/${id}/read`, {
-        method: 'PATCH',
-        headers: {
-          'X-API-Key': apiKey || '',
-        },
-      });
+      const response = await apiRequest('PATCH', `/api/admin/contact/${id}/read`);
       return response;
     },
     onSuccess: () => {

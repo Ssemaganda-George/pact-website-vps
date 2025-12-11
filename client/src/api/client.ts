@@ -24,9 +24,7 @@ export const apiClient = axios.create({
   withCredentials: true, // Important for CORS requests with credentials
   timeout: 10000, // 10 second timeout
   timeoutErrorMessage: 'Request timed out. Please try again.',
-  // Add retry configuration
-  retries: 3,
-  retryDelay: 1000,
+  // Note: Retry logic is handled in the response interceptor
 });
 
 // Add request interceptor to include auth token

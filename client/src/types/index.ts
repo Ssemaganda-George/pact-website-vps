@@ -7,6 +7,7 @@ export interface ServiceItem {
   details: string[];
   icon?: string;
   image: string;
+  category?: string;
 }
 
 export interface ExpertiseArea {
