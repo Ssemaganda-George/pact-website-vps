@@ -3,6 +3,7 @@ name: Deploy to IP
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -10,6 +11,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Debug - Check workflow is running
+        run: |
+          echo "Workflow started successfully!"
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref }}"
+          echo "Commit: ${{ github.sha }}"
 
       - name: Set image tag
         id: image
