@@ -180,21 +180,23 @@ const HeroSlider = () => {
                   </p>
                   
                   <div className="flex flex-col sm:flex-row gap-5">
-                    <Link 
-                      href={slide.actionLink} 
-                      className="group items-center text-white py-3 px-6 rounded-sm inline-block transition-all text-center uppercase tracking-wide text-sm md:text-base font-medium"
-                      style={{ backgroundColor: slide.accentColor || '#FF8200' }}
-                    >
-                      {slide.actionText}
-                      <ArrowRight className="ml-2 w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                    <Link 
-                      href="/contact" 
-                      className="group items-center text-white py-3 px-6 rounded-sm inline-block transition-all text-center uppercase tracking-wide text-sm md:text-base font-medium border-2 border-white/60 hover:bg-white/10"
-                    >
-                      Contact Us
-                      <ArrowRight className="ml-2 w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
-                    </Link>
+                    <div className="flex flex-col sm:flex-row gap-5 w-full">
+                      <Link 
+                        href={slide.actionLink} 
+                        className="flex items-center justify-center w-full sm:w-auto text-white py-3 px-6 rounded-sm transition-all text-center uppercase tracking-wide text-sm md:text-base font-medium"
+                        style={{ backgroundColor: slide.accentColor || '#FF8200' }}
+                      >
+                        <span>{slide.actionText}</span>
+                        <ArrowRight className="ml-2 w-5 h-5" />
+                      </Link>
+                      <Link 
+                        href="/contact" 
+                        className="flex items-center justify-center w-full sm:w-auto text-white py-3 px-6 rounded-sm transition-all text-center uppercase tracking-wide text-sm md:text-base font-medium border-2 border-white/60 hover:bg-white/10"
+                      >
+                        <span>Contact Us</span>
+                        <ArrowRight className="ml-2 w-5 h-5" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
