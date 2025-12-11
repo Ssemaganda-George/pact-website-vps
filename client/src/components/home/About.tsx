@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Skeleton, TextSkeleton, FeatureSkeleton } from '@/components/ui/ContentSkeleton';
 
 // Define the AboutContent interface
 interface AboutContent {
@@ -149,7 +150,61 @@ const About = () => {
   }, []);
 
   if (loading || !content) {
-    return <div className="h-96 flex items-center justify-center">Loading...</div>;
+    return (
+      <section className="bg-slate-50 py-12">
+        <div className="container mx-auto px-4">
+          {/* Loading Header Skeleton */}
+          <div className="text-center mb-8 space-y-3">
+            <Skeleton className="h-4 w-24 mx-auto" />
+            <Skeleton className="h-10 w-80 mx-auto" />
+            <Skeleton className="h-1 w-24 mx-auto" />
+          </div>
+
+          {/* Loading Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left Column Skeleton */}
+            <div className="lg:col-span-7">
+              <div className="bg-white p-8 rounded-lg shadow-md space-y-6">
+                <Skeleton className="h-8 w-48" />
+                <TextSkeleton lines={4} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                  <FeatureSkeleton />
+                  <FeatureSkeleton />
+                </div>
+                <div className="pt-4 border-t border-slate-200">
+                  <Skeleton className="h-12 w-full rounded-lg" />
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column Skeleton */}
+            <div className="lg:col-span-5">
+              <div className="bg-white p-8 rounded-lg shadow-md space-y-8">
+                {/* Vision Skeleton */}
+                <div className="space-y-3">
+                  <Skeleton className="h-6 w-48" />
+                  <TextSkeleton lines={2} />
+                </div>
+                {/* Mission Skeleton */}
+                <div className="space-y-3">
+                  <Skeleton className="h-6 w-32" />
+                  <TextSkeleton lines={1} />
+                </div>
+                {/* Core Values Skeleton */}
+                <div className="space-y-3">
+                  <Skeleton className="h-6 w-40" />
+                  <div className="space-y-2">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Skeleton key={i} className="h-10 w-full rounded" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
   }
 
   // Get paragraphs from description - handle both \r\n and \n line breaks

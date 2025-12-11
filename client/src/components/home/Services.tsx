@@ -3,8 +3,10 @@ import { Link } from 'wouter';
 import { cn } from '@/lib/utils';
 import servicesData from '@/data/services'; // Keep as fallback
 import { ServiceItem } from '@/types';
-import { ArrowRight, Plus, Minus, Loader2 } from 'lucide-react';
+import { ArrowRight, Plus, Minus } from 'lucide-react';
 import { fetchServices } from '@/lib/api';
+import { CardSkeleton } from '@/components/ui/ContentSkeleton';
+import { Skeleton } from '@/components/ui/ContentSkeleton';
 
 const ServiceCard = ({ service }: { service: ServiceItem }) => {
   return (
@@ -88,10 +90,19 @@ const Services = () => {
   if (loading) {
     return (
       <section id="services" className="py-16 md:py-24 bg-gray-50">
-        <div className="container mx-auto px-4 md:px-8 flex justify-center items-center" style={{ minHeight: '300px' }}>
-          <div className="text-center">
-            <Loader2 className="w-10 h-10 mx-auto animate-spin text-primary mb-4" />
-            <p className="text-gray-500">Loading services...</p>
+        <div className="container mx-auto px-4 md:px-8">
+          {/* Loading Header */}
+          <div className="text-center mb-12 space-y-3">
+            <Skeleton className="h-4 w-32 mx-auto" />
+            <Skeleton className="h-10 w-64 mx-auto" />
+            <Skeleton className="h-1 w-24 mx-auto" />
+          </div>
+
+          {/* Loading Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
           </div>
         </div>
       </section>

@@ -117,9 +117,21 @@ const HeroSlider = () => {
     };
   }, [emblaApi, slides]); // Added slides as dependency to reinitialize when slides are loaded
 
-  // If loading and no slides yet, show nothing (will be fast anyway)
+  // If loading and no slides yet, show skeleton
   if (loading && slides.length === 0) {
-    return null;
+    return (
+      <section id="home" className="relative overflow-hidden bg-gradient-to-r from-navy-900 to-navy-800 h-[60vh] md:h-[70vh]">
+        <div className="absolute inset-0 bg-black/20 animate-pulse" />
+        <div className="relative h-full flex items-center justify-center">
+          <div className="container mx-auto px-4 md:px-8 text-center space-y-6">
+            <div className="h-12 bg-white/10 rounded-lg w-3/4 md:w-1/2 mx-auto animate-pulse" />
+            <div className="h-6 bg-white/10 rounded-lg w-full md:w-2/3 mx-auto animate-pulse" />
+            <div className="h-6 bg-white/10 rounded-lg w-5/6 md:w-1/2 mx-auto animate-pulse" />
+            <div className="h-12 bg-white/10 rounded-lg w-48 mx-auto animate-pulse" />
+          </div>
+        </div>
+      </section>
+    );
   }
 
   // If no slides are available after loading, show a message
