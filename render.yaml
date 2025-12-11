@@ -11,6 +11,13 @@ services:
         value: production
       - key: PORT
         value: 10000
+      # Supabase Configuration
+      - key: VITE_SUPABASE_URL
+        value: https://etjtxhucuubuqqmrzfoh.supabase.co
+      - key: VITE_SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0anR4aHVjdXVidXFxbXJ6Zm9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNzM0MDksImV4cCI6MjA4MDk0OTQwOX0.QShaBmxo3KKtgjb0WO6Xx2Rj4LYCvEr_sj8IZHl3SJE
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0anR4aHVjdXVidXFxbXJ6Zm9oIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTM3MzQwOSwiZXhwIjoyMDgwOTQ5NDA5fQ.hOqjajQFhFMYKE33qwS11ig5D3xaB58jBzolzp50FSE
       # - key: SESSION_SECRET
       #   generateValue: true
       # - key: JWT_SECRET
